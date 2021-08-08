@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import * as core from 'olik';
-import { FutureState } from 'olik';
+import { augment, createComponentStore, DeepReadonly, Derivation, Future, FutureState, OptionsForMakingAComponentStore, StoreOrDerivation, Unsubscribable } from 'olik';
 import React from 'react';
 
 export * from 'olik';
@@ -18,17 +17,17 @@ declare module 'olik' {
 }
 
 export const init = () => {
-  core.augment({
+  augment({
     selection: {
-      useState: function<C>(input: core.StoreOrDerivation<C>) {
+      useState: function<C>(input: StoreOrDerivation<C>) {
         return function(deps: React.DependencyList = []) {
           const selection = React.useRef(input);
-          const [value, setValue] = React.useState(selection.current.read() as core.DeepReadonly<C>);
+          const [value, setValue] = React.useState(selection.current.read() as DeepReadonly<C>);
           const allDeps = [selection.current.read()];
           if (deps) { allDeps.push(...deps); }
           React.useEffect(() => {
             const subscription = selection.current.onChange(arg => {
-              setValue(arg as core.DeepReadonly<C>); //// deepreadonly ?
+              setValue(arg as DeepReadonly<C>); //// deepreadonly ?
             });
             return () => subscription.unsubscribe();
             // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,20 +37,20 @@ export const init = () => {
       },
     },
     derivation: {
-      useState: function<C>(input: core.Derivation<C>) {
+      useState: function<C>(input: Derivation<C>) {
         return function(deps: React.DependencyList = []) {
           const selection = React.useRef(input);
-          const [value, setValue] = React.useState(selection.current.read() as core.DeepReadonly<C>);
+          const [value, setValue] = React.useState(selection.current.read() as DeepReadonly<C>);
           const previousDeps = React.useRef(deps);
           const first = React.useRef(true);
           React.useEffect(() => {
-            let subscription: core.Unsubscribable;
+            let subscription: Unsubscribable;
             if (first || (JSON.stringify(previousDeps.current) !== JSON.stringify(deps))) {
               selection.current = input;
               setValue(selection.current.read() as any);
               previousDeps.current = deps;
               subscription = selection.current.onChange(arg => {
-                setValue(arg as core.DeepReadonly<C>);
+                setValue(arg as DeepReadonly<C>);
               })
             }
             return () => {
@@ -64,14 +63,14 @@ export const init = () => {
       },
     },
     future: {
-      useAsync: function<C>(input: core.Future<C>) {
+      useAsync: function<C>(input: Future<C>) {
         return function(deps: React.DependencyList = []) {
           const selection = React.useRef(input);
-          const [value, setValue] = React.useState({ error: null, isLoading: true, storeValue: input.read(), wasRejected: false, wasResolved: false } as core.FutureState<C>);
+          const [value, setValue] = React.useState({ error: null, isLoading: true, storeValue: input.read(), wasRejected: false, wasResolved: false } as FutureState<C>);
           const previousDeps = React.useRef(deps);
           const first = React.useRef(true);
           React.useEffect(() => {
-            let subscription: core.Unsubscribable;
+            let subscription: Unsubscribable;
             if (first || (JSON.stringify(previousDeps.current) !== JSON.stringify(deps))) {
               selection.current = input;
               previousDeps.current = deps;
@@ -94,12 +93,12 @@ export const init = () => {
 
 export const useComponentStore = function<C>(
   initialState: C,
-  options: core.OptionsForMakingAComponentStore,
+  options: OptionsForMakingAComponentStore,
 ) {
   const initState = React.useRef(initialState);
   const opts = React.useRef(options);
   const select = React.useMemo(() => {
-    return core.createComponentStore(initState.current, opts.current);
+    return createComponentStore(initState.current, opts.current);
   }, []);
   React.useEffect(() => {
     return () => {
