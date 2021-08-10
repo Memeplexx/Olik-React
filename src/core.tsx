@@ -12,7 +12,7 @@ declare module 'olik' {
     useState: (deps?: React.DependencyList) => R;
   }
   interface Future<C> {
-    useAsync: (deps?: React.DependencyList) => FutureState<C>;
+    useFuture: (deps?: React.DependencyList) => FutureState<C>;
   }
 }
 
@@ -63,7 +63,7 @@ export const init = () => {
       },
     },
     future: {
-      useAsync: function<C>(input: Future<C>) {
+      useFuture: function<C>(input: Future<C>) {
         return function(deps: React.DependencyList = []) {
           const selection = React.useRef(input);
           const [value, setValue] = React.useState({ error: null, isLoading: true, storeValue: input.read(), wasRejected: false, wasResolved: false } as FutureState<C>);
@@ -106,7 +106,7 @@ export const useComponentStore = function<C>(
       // In dev mode, React.StrictMode is enabled. We cannot allow the store to be detached in this instance because an 
       // error will be thrown the next time a developer saves a code update and then attempts to update the nested store state.
       if (!devMode) {
-        select().detachFromRootStore();
+        select().detachFromApplicationStore();
       } else { // Reset the state. Note for future: It may be safest that this is the ONLY correct behavior (rather than detaching)
         select().reset();
       }

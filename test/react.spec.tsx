@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { createRootStore, deriveFrom, init, useComponentStore } from '../src';
+import { createApplicationStore, deriveFrom, init, useComponentStore } from '../src';
 
 describe('React', () => {
 
@@ -19,14 +19,14 @@ describe('React', () => {
   })
 
   it('should create and update a store', () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     select(s => s.object.property)
       .replace('test');
     expect(select().read().object.property).toEqual('test');
   })
 
   it('should useSelector', () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     const App = () => {
       const result = select(s => s.object.property).useState();
       return (
@@ -43,7 +43,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with no deps', async () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     let calcCount = 0;
     const App = () => {
       const result = deriveFrom(
@@ -69,7 +69,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with deps', async () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     let calcCount = 0;
     const App = () => {
       const [str, setStr] = React.useState('');
@@ -122,7 +122,7 @@ describe('React', () => {
   });
 
   it('should create a component store with a parent', () => {
-    const parentSelect = createRootStore({
+    const parentSelect = createApplicationStore({
       ...initialState,
       components: {
         component: {} as { [key: string]: { prop: string } }
@@ -156,7 +156,7 @@ describe('React', () => {
 
 
   it('component store should receive props from parent', async () => {
-    const parentSelect = createRootStore({
+    const parentSelect = createApplicationStore({
       ...initialState,
       components: {
         component2: {} as { [key: string]: { prop: string, num: number } }
@@ -187,7 +187,7 @@ describe('React', () => {
   })
 
   it('should respond to async actions', async () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     const App = () => {
       const state = select(s => s.object.property).useState();
       return (
@@ -204,7 +204,7 @@ describe('React', () => {
   });
 
   it('should respond to async queries', async () => {
-    const select = createRootStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtools: false });
     const fetchString = () => new Promise<string>(resolve => setTimeout(() => resolve('test'), 10))
     const App = () => {
       const {
@@ -212,7 +212,7 @@ describe('React', () => {
         wasRejected,
         isLoading,
         storeValue
-      } = select(s => s.object.property).replace(fetchString).useAsync();
+      } = select(s => s.object.property).replace(fetchString).useFuture();
       return (
         <>
           <div data-testid="result">{storeValue}</div>
@@ -234,7 +234,7 @@ describe('React', () => {
   it('should be able to paginate', async () => {
     const todos = new Array(15).fill(null).map((e, i) => ({ id: i + 1, text: `value ${i + 1}` }));
     type Todo = { id: Number, text: string };
-    const select = createRootStore({
+    const select = createApplicationStore({
       toPaginate: {} as { [key: string]: Todo[] },
     }, { devtools: false });
     const fetchTodos = (index: number) => new Promise<Todo[]>(resolve => setTimeout(() => resolve(todos.slice(index * 10, (index * 10) + 10)), 10));
@@ -246,7 +246,7 @@ describe('React', () => {
         isLoading,
         error,
         storeValue,
-      } = select(s => s.toPaginate[index]).replaceAll(() => fetchTodos(index)).useAsync([index]);
+      } = select(s => s.toPaginate[index]).replaceAll(() => fetchTodos(index)).useFuture([index]);
       return (
         <>
           <button data-testid="btn" onClick={() => setIndex(1)}>Click</button>
