@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { createApplicationStore, deriveFrom, init, useComponentStore } from '../src';
+import { createApplicationStore, deriveFrom, useComponentStore } from '../src';
 
 describe('React', () => {
 
@@ -13,10 +13,6 @@ describe('React', () => {
     array: [{ id: 1, value: 'one' }, { id: 2, value: 'two' }, { id: 3, value: 'three' }],
     string: 'b',
   };
-
-  beforeAll(() => {
-    init();
-  })
 
   it('should create and update a store', () => {
     const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
@@ -93,7 +89,7 @@ describe('React', () => {
     expect(screen.getByTestId('result').textContent).toEqual(initialState.string + initialState.object.property + 0);
     expect(calcCount).toEqual(1);
     (screen.getByTestId('btn-1') as HTMLButtonElement).click();
-    expect(calcCount).toEqual(1);
+    await waitFor(() => expect(calcCount).toEqual(1));
     (screen.getByTestId('btn-2') as HTMLButtonElement).click();
     await waitFor(() => expect(calcCount).toEqual(2));
   });
@@ -154,7 +150,6 @@ describe('React', () => {
     expect(parentSelect(s => s.components.component).read()).toEqual({ '0': { prop: 'test' } });
   });
 
-
   it('component store should receive props from parent', async () => {
     const parentSelect = createApplicationStore({
       ...initialState,
@@ -207,18 +202,13 @@ describe('React', () => {
     const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const fetchString = () => new Promise<string>(resolve => setTimeout(() => resolve('test'), 10))
     const App = () => {
-      const {
-        wasResolved,
-        wasRejected,
-        isLoading,
-        storeValue
-      } = select(s => s.object.property).replace(fetchString).useFuture();
+      const future = select(s => s.object.property).replace(fetchString).useFuture();
       return (
         <>
-          <div data-testid="result">{storeValue}</div>
-          {isLoading && <div>Loading</div>}
-          {wasResolved && <div>Success</div>}
-          {wasRejected && <div>Failure</div>}
+          <div data-testid="result">{future.storeValue}</div>
+          {future.isLoading && <div>Loading</div>}
+          {future.wasResolved && <div>Success</div>}
+          {future.wasRejected && <div>Failure</div>}
         </>
       );
     }
@@ -240,21 +230,17 @@ describe('React', () => {
     const fetchTodos = (index: number) => new Promise<Todo[]>(resolve => setTimeout(() => resolve(todos.slice(index * 10, (index * 10) + 10)), 10));
     const App = () => {
       const [index, setIndex] = React.useState(0);
-      const {
-        wasResolved,
-        wasRejected,
-        isLoading,
-        error,
-        storeValue,
-      } = select(s => s.toPaginate[index]).replaceAll(() => fetchTodos(index)).useFuture([index]);
+      const future = select(s => s.toPaginate[index])
+        .replaceAll(() => fetchTodos(index))
+        .useFuture([index]);
       return (
         <>
           <button data-testid="btn" onClick={() => setIndex(1)}>Click</button>
-          <div data-testid="result">{error}</div>
-          {isLoading && <div>Loading</div>}
-          {wasResolved && <div>Success</div>}
-          {wasRejected && <div>Failure</div>}
-          {wasResolved && <div data-testid='todos-length'>{storeValue.length}</div>}
+          <div data-testid="result">{future.error}</div>
+          {future.isLoading && <div>Loading</div>}
+          {future.wasResolved && <div>Success</div>}
+          {future.wasRejected && <div>Failure</div>}
+          {future.wasResolved && <div data-testid='todos-length'>{future.storeValue.length}</div>}
         </>
       );
     }
@@ -271,6 +257,34 @@ describe('React', () => {
       expect(screen.queryByText('Loading')).not.toBeInTheDocument();
       expect(screen.getByTestId('todos-length').textContent).toEqual('5');
     });
+  })
+
+  it('should be able to paginate', async () => {
+    const select = createApplicationStore({
+      storeNum: -1
+    }, { devtoolsEnabled: false });
+    const fetchNum = (num: number) => new Promise(resolve => setTimeout(() => resolve(num), 100));
+    const App = () => {
+      const [num, setNum] = React.useState(0);
+      const future = select(s => s.storeNum)
+        .replace(() => fetchNum(num))
+        .useFuture([num]);
+      return (
+        <>
+          <div data-testid="num">{num}</div>
+          <div data-testid="res">{future.storeValue}</div>
+          <button data-testid="btn" onClick={() => setNum(n => n + 1)}>Next page</button>
+        </>
+      );
+    }
+    render(<App />);
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('0'));
+    (screen.getByTestId('btn') as HTMLButtonElement).click();
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('1'));
+    (screen.getByTestId('btn') as HTMLButtonElement).click();
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('2'));
+    (screen.getByTestId('btn') as HTMLButtonElement).click();
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('3'));
   })
 
 });

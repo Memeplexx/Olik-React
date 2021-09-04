@@ -1,61 +1,82 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { augment, createComponentStore, DeepReadonly, Derivation, Future, FutureState, OptionsForMakingAComponentStore, StoreOrDerivation, Unsubscribable } from 'olik';
 import React from 'react';
+
+import * as core from 'olik';
 
 export * from 'olik';
 
+export const createApplicationStore: typeof core['createApplicationStore'] = (state, options) => {
+  augementCore();
+  return core.createApplicationStore(state, options);
+}
+
+export const createComponentStore: typeof core['createComponentStore'] = (state, options) => {
+  augementCore();
+  return core.createComponentStore(state, options);
+}
+
 declare module 'olik' {
   interface StoreOrDerivation<C> {
+    /**
+     * Returns a hook which reads the selected node of the state tree
+     */
     useState: (deps?: React.DependencyList) => C;
   }
   interface Derivation<R> {
+    /**
+     * Returns a hook which reads the state of a derivation
+     */
     useState: (deps?: React.DependencyList) => R;
   }
   interface Future<C> {
-    useFuture: (deps?: React.DependencyList) => FutureState<C>;
+    /**
+     * Returns a hook which tracks the status of the promise which is being used to update the state
+     * @example
+     * const future = select(s => s.some.value)
+     *   .replace(() => fetchValue())
+     *   .useFuture();
+     * 
+     * <div>Is loading: {future.isLoading}</div>
+     * <div>Was resolved: {future.wasResolved}</div>
+     * <div>Was rejected: {future.wasRejected}</div>
+     * <div>Store value: {future.storeValue}</div>
+     * <div>Error: {future.error}</div>
+     */
+    useFuture: (deps?: React.DependencyList) => core.FutureState<C>;
   }
 }
 
-export const init = () => {
-  augment({
+let coreHasBeenAgmented = false;
+const augementCore = () => {
+  if (coreHasBeenAgmented) { return; }
+  coreHasBeenAgmented = true;
+  core.augment({
     selection: {
-      useState: function<C>(input: StoreOrDerivation<C>) {
-        return function(deps: React.DependencyList = []) {
-          const selection = React.useRef(input);
-          const [value, setValue] = React.useState(selection.current.read() as DeepReadonly<C>);
-          const allDeps = [selection.current.read()];
-          if (deps) { allDeps.push(...deps); }
+      useState: function <C>(input: core.StoreOrDerivation<C>) {
+        return function (deps: React.DependencyList = []) {
+          const [value, setValue] = React.useState(input.read() as core.DeepReadonly<C>);
           React.useEffect(() => {
-            const subscription = selection.current.onChange(arg => {
-              setValue(arg as DeepReadonly<C>); //// deepreadonly ?
-            });
+            const subscription = input.onChange(arg => setValue(arg as core.DeepReadonly<C>));
             return () => subscription.unsubscribe();
             // eslint-disable-next-line react-hooks/exhaustive-deps
-          }, allDeps);
+          }, deps);
           return value;
         }
       },
     },
     derivation: {
-      useState: function<C>(input: Derivation<C>) {
-        return function(deps: React.DependencyList = []) {
-          const selection = React.useRef(input);
-          const [value, setValue] = React.useState(selection.current.read() as DeepReadonly<C>);
-          const previousDeps = React.useRef(deps);
-          const first = React.useRef(true);
+      useState: function <C>(input: core.Derivation<C>) {
+        return function (deps: React.DependencyList = []) {
+          const inputRef = React.useRef(input);
+          const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
           React.useEffect(() => {
-            let subscription: Unsubscribable;
-            if (first || (JSON.stringify(previousDeps.current) !== JSON.stringify(deps))) {
-              selection.current = input;
-              setValue(selection.current.read() as any);
-              previousDeps.current = deps;
-              subscription = selection.current.onChange(arg => {
-                setValue(arg as DeepReadonly<C>);
-              })
+            inputRef.current = input;
+            const val = input.read() as core.DeepReadonly<C>;
+            if (value !== val) {
+              setValue(val);
             }
-            return () => {
-              if (subscription) { subscription.unsubscribe(); }
-            };
+            const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
+            return () => { if (subscription) { subscription.unsubscribe(); } }
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
           return value;
@@ -63,37 +84,34 @@ export const init = () => {
       },
     },
     future: {
-      useFuture: function<C>(input: Future<C>) {
-        return function(deps: React.DependencyList = []) {
-          const selection = React.useRef(input);
-          const [value, setValue] = React.useState({ error: null, isLoading: true, storeValue: input.read(), wasRejected: false, wasResolved: false } as FutureState<C>);
-          const previousDeps = React.useRef(deps);
+      useFuture: function <C>(input: core.Future<C>) {
+        return function (deps: React.DependencyList = []) {
+          const [state, setState] = React.useState(input.getFutureState());
           const first = React.useRef(true);
           React.useEffect(() => {
-            let subscription: Unsubscribable;
-            if (first || (JSON.stringify(previousDeps.current) !== JSON.stringify(deps))) {
-              selection.current = input;
-              previousDeps.current = deps;
-              setValue({ error: null, isLoading: true, storeValue: input.read(), wasRejected: false, wasResolved: false })
-              subscription = selection.current.onChange(arg => {
-                setValue(arg);
-              })
+            let subscription: core.Unsubscribable;
+            if (first.current) {
+              // on first call of this hook, we already have our state correctly initialized, so we don't need to set it and force an unnecessary re-render
+              first.current = false;
+            } else if (!state.isLoading) {
+              setState(val => ({ ...val, isLoading: true }));
             }
-            return () => {
-              if (subscription) { subscription.unsubscribe(); }
-            };
+            input.asPromise()
+              .then(() => setState(input.getFutureState()))
+              .catch(() => setState(input.getFutureState()));
+            return () => { if (subscription) { subscription.unsubscribe(); } }
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
-          return value;
+          return state;
         }
       }
     }
   })
 }
 
-export const useComponentStore = function<C>(
+export const useComponentStore = function <C>(
   initialState: C,
-  options: OptionsForMakingAComponentStore,
+  options: core.OptionsForMakingAComponentStore,
 ) {
   const initState = React.useRef(initialState);
   const opts = React.useRef(options);
