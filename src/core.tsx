@@ -88,18 +88,18 @@ const augementCore = () => {
         return function (deps: React.DependencyList = []) {
           const [state, setState] = React.useState(input.getFutureState());
           const first = React.useRef(true);
+          const active = React.useRef(true);
           React.useEffect(() => {
-            let subscription: core.Unsubscribable;
             if (first.current) {
               // on first call of this hook, we already have our state correctly initialized, so we don't need to set it and force an unnecessary re-render
               first.current = false;
-            } else if (!state.isLoading) {
+            } else if (!state.isLoading && active.current) {
               setState(input.getFutureState());
             }
             input.asPromise()
-              .then(() => setState(input.getFutureState()))
-              .catch(() => setState(input.getFutureState()));
-            return () => { if (subscription) { subscription.unsubscribe(); } }
+              .then(() => { if (active.current) { setState(input.getFutureState()); } })
+              .catch(() => { if (active.current) { setState(input.getFutureState()); } });
+            return () => { if (first.current) { active.current = false; } }
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
           return state;
