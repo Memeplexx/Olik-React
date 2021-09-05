@@ -88,18 +88,19 @@ const augementCore = () => {
         return function (deps: React.DependencyList = []) {
           const [state, setState] = React.useState(input.getFutureState());
           const first = React.useRef(true);
-          const active = React.useRef(true);
+          // const active = React.useRef(true);
           React.useEffect(() => {
             if (first.current) {
               // on first call of this hook, we already have our state correctly initialized, so we don't need to set it and force an unnecessary re-render
               first.current = false;
-            } else if (!state.isLoading && active.current) {
+            } else if (!state.isLoading) {
               setState(input.getFutureState());
             }
+            let running = true;
             input.asPromise()
-              .then(() => { if (active.current) { setState(input.getFutureState()); } })
-              .catch(() => { if (active.current) { setState(input.getFutureState()); } });
-            return () => { if (first.current) { active.current = false; } }
+              .then(() => { if (running) { setState(input.getFutureState()); } })
+              .catch(() => { if (running) { setState(input.getFutureState()); } });
+            return () => { running = false; }
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
           return state;
