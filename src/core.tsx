@@ -87,17 +87,18 @@ const augementCore = () => {
       useFuture: function <C>(input: core.Future<C>) {
         return function (deps: React.DependencyList = []) {
           const [state, setState] = React.useState(input.getFutureState());
-          const first = React.useRef(true);
-          // const active = React.useRef(true);
           React.useEffect(() => {
-            if (first.current) {
-              // on first call of this hook, we already have our state correctly initialized, so we don't need to set it and force an unnecessary re-render
-              first.current = false;
-            } else if (!state.isLoading) {
+
+            // Call promise, and update state because there may have been an optimistic update, or isLoading was set to false
+            const stateSnapshot = input.getFutureState().storeValue;
+            const promise = input.asPromise();
+            if (input.getFutureState().storeValue !== stateSnapshot || !state.isLoading) {
               setState(input.getFutureState());
             }
+
+            // Invoke then() on promise
             let running = true;
-            input.asPromise()
+            promise
               .then(() => { if (running) { setState(input.getFutureState()); } })
               .catch(() => { if (running) { setState(input.getFutureState()); } });
             return () => { running = false; }
