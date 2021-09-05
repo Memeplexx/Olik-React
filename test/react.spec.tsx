@@ -226,7 +226,7 @@ describe('React', () => {
     type Todo = { id: Number, text: string };
     const select = createApplicationStore({
       toPaginate: {} as { [key: string]: Todo[] },
-    }, { devtoolsEnabled: false });
+    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const fetchTodos = (index: number) => new Promise<Todo[]>(resolve => setTimeout(() => resolve(todos.slice(index * 10, (index * 10) + 10)), 10));
     const App = () => {
       const [index, setIndex] = React.useState(0);
@@ -262,7 +262,7 @@ describe('React', () => {
   it('should be able to paginate', async () => {
     const select = createApplicationStore({
       storeNum: -1
-    }, { devtoolsEnabled: false });
+    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const fetchNum = (num: number) => new Promise(resolve => setTimeout(() => resolve(num), 100));
     const App = () => {
       const [num, setNum] = React.useState(0);
@@ -285,6 +285,43 @@ describe('React', () => {
     await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('2'));
     (screen.getByTestId('btn') as HTMLButtonElement).click();
     await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('3'));
+  })
+
+  it('should support optimistic updates correctly with a future', async () => {
+    const select = createApplicationStore({ test: '' }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const App = () => {
+      const future = select(s => s.test)
+        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
+        .useFuture();
+      return (
+        <>
+          <div data-testid="res">{future.storeValue}</div>
+        </>
+      );
+    };
+    render(<App />);
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('ABC'));
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('XXX'));
+  })
+
+  it('should support optimistic updates correctly with a promise', async () => {
+    const select = createApplicationStore({ test: '' }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const App = () => {
+      const onClick = () => select(s => s.test)
+        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
+        .asPromise();
+      const state = select(s => s.test).useState();
+      return (
+        <>
+          <div data-testid="res">{state}</div>
+          <button data-testid="btn" onClick={() => onClick()}>Next page</button>
+        </>
+      );
+    };
+    render(<App />);
+    (screen.getByTestId('btn') as HTMLButtonElement).click();
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('ABC'));
+    await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('XXX'));
   })
 
 });

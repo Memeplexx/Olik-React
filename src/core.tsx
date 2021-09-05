@@ -94,7 +94,7 @@ const augementCore = () => {
               // on first call of this hook, we already have our state correctly initialized, so we don't need to set it and force an unnecessary re-render
               first.current = false;
             } else if (!state.isLoading) {
-              setState(val => ({ ...val, isLoading: true }));
+              setState(input.getFutureState());
             }
             input.asPromise()
               .then(() => setState(input.getFutureState()))
