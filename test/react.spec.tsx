@@ -15,14 +15,14 @@ describe('React', () => {
   };
 
   it('should create and update a store', () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     select(s => s.object.property)
       .replace('test');
     expect(select().read().object.property).toEqual('test');
   })
 
   it('should useSelector', () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const App = () => {
       const result = select(s => s.object.property).useState();
       return (
@@ -39,7 +39,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with no deps', async () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     let calcCount = 0;
     const App = () => {
       const result = deriveFrom(
@@ -65,7 +65,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with deps', async () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     let calcCount = 0;
     const App = () => {
       const [str, setStr] = React.useState('');
@@ -97,7 +97,7 @@ describe('React', () => {
   it('should create a component store without a parent', () => {
     let renderCount = 0;
     const App = () => {
-      const select = useComponentStore(initialState, { componentName: 'unhosted', instanceName: '0', devtoolsEnabled: false });
+      const select = useComponentStore(initialState, { componentName: 'unhosted', instanceName: '0' });
       const result = select(s => s.object.property).useState();
       renderCount++;
       return (
@@ -123,10 +123,10 @@ describe('React', () => {
       components: {
         component: {} as { [key: string]: { prop: string } }
       }
-    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    }, { replaceExistingStoreIfItExists: true });
     let renderCount = 0;
     const Child = () => {
-      const select = useComponentStore({ prop: '' }, { componentName: 'component', instanceName: '0', devtoolsEnabled: false });
+      const select = useComponentStore({ prop: '' }, { componentName: 'component', instanceName: '0' });
       const result = select(s => s.prop).useState();
       renderCount++;
       return (
@@ -156,9 +156,9 @@ describe('React', () => {
       components: {
         component2: {} as { [key: string]: { prop: string, num: number } }
       }
-    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    }, { replaceExistingStoreIfItExists: true });
     const Child: React.FunctionComponent<{ num: number }> = (props) => {
-      const select = useComponentStore({ prop: 0 }, { componentName: 'component2', instanceName: '0', devtoolsEnabled: false });
+      const select = useComponentStore({ prop: 0 }, { componentName: 'component2', instanceName: '0' });
       React.useEffect(() => select(s => s.prop).replace(props.num), [props.num, select])
       const result = select(s => s.prop).useState();
       return (
@@ -182,7 +182,7 @@ describe('React', () => {
   })
 
   it('should respond to async actions', async () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const App = () => {
       const state = select(s => s.object.property).useState();
       return (
@@ -199,7 +199,7 @@ describe('React', () => {
   });
 
   it('should respond to async queries', async () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const fetchString = () => new Promise<string>(resolve => setTimeout(() => resolve('test'), 10))
     const App = () => {
       const future = select(s => s.object.property).replace(fetchString).useFuture();
@@ -226,7 +226,7 @@ describe('React', () => {
     type Todo = { id: Number, text: string };
     const select = createApplicationStore({
       toPaginate: {} as { [key: string]: Todo[] },
-    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    }, { replaceExistingStoreIfItExists: true });
     const fetchTodos = (index: number) => new Promise<Todo[]>(resolve => setTimeout(() => resolve(todos.slice(index * 10, (index * 10) + 10)), 10));
     const App = () => {
       const [index, setIndex] = React.useState(0);
@@ -262,7 +262,7 @@ describe('React', () => {
   it('should be able to paginate', async () => {
     const select = createApplicationStore({
       storeNum: -1
-    }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    }, { replaceExistingStoreIfItExists: true });
     const fetchNum = (num: number) => new Promise(resolve => setTimeout(() => resolve(num), 100));
     const App = () => {
       const [num, setNum] = React.useState(0);
@@ -288,7 +288,7 @@ describe('React', () => {
   })
 
   it('should support optimistic updates correctly with a future', async () => {
-    const select = createApplicationStore({ test: '' }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore({ test: '' }, { replaceExistingStoreIfItExists: true });
     const App = () => {
       const future = select(s => s.test)
         .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
@@ -305,7 +305,7 @@ describe('React', () => {
   })
 
   it('should support optimistic updates correctly with a promise', async () => {
-    const select = createApplicationStore({ test: '' }, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore({ test: '' }, { replaceExistingStoreIfItExists: true });
     const App = () => {
       const onClick = () => select(s => s.test)
         .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })

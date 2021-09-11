@@ -4474,10 +4474,10 @@ object.values@^1.1.4:
     define-properties "^1.1.3"
     es-abstract "^1.18.2"
 
-olik@0.0.56:
-  version "0.0.56"
-  resolved "https://registry.yarnpkg.com/olik/-/olik-0.0.56.tgz#1cec3ec51f5700a3b816198f103e551e545e398c"
-  integrity sha512-BLtfae6lOx36y/2jPW1yXd35GWlKEMGYgjSvzzZYuyWarQ5gzN80Peg7pI9MsrZK6MgfumGyPAnwakLAzRCpQw==
+olik@^0.0.60:
+  version "0.0.60"
+  resolved "https://registry.yarnpkg.com/olik/-/olik-0.0.60.tgz#c4d88162e76123b2f2b477cadf1d893a12d89476"
+  integrity sha512-rwB4KSJ4xYK+M158qmWbaGSS5r6E1i2kdGKv4DaN4cgt9ChgVfP+OYB5Jk0t3s6tFA5V6ad39Lo3Et+lLOydHg==
 
 once@^1.3.0, once@^1.3.1, once@^1.3.2, once@^1.4.0:
   version "1.4.0"
@@ -4934,6 +4934,11 @@ redent@^3.0.0:
   dependencies:
     indent-string "^4.0.0"
     strip-indent "^3.0.0"
+
+redux-devtools-extension@^2.13.9:
+  version "2.13.9"
+  resolved "https://registry.yarnpkg.com/redux-devtools-extension/-/redux-devtools-extension-2.13.9.tgz#6b764e8028b507adcb75a1cae790f71e6be08ae7"
+  integrity sha512-cNJ8Q/EtjhQaZ71c8I9+BPySIBVEKssbPpskBfsXqb8HJ002A3KRVHfeRzwRo6mGPqsm7XuHTqNSNeS1Khig0A==
 
 regenerator-runtime@^0.13.4:
   version "0.13.9"
