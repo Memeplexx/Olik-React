@@ -54,9 +54,15 @@ const augementCore = () => {
     selection: {
       useState: function <C>(input: core.StoreOrDerivation<C>) {
         return function (deps: React.DependencyList = []) {
-          const [value, setValue] = React.useState(input.read() as core.DeepReadonly<C>);
+          const inputRef = React.useRef(input);
+          const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
           React.useEffect(() => {
-            const subscription = input.onChange(arg => setValue(arg as core.DeepReadonly<C>));
+            inputRef.current = input;
+            const val = input.read() as core.DeepReadonly<C>;
+            if (value !== val) {
+              setValue(val);
+            }
+            const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
             return () => subscription.unsubscribe();
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);

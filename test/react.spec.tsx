@@ -324,4 +324,42 @@ describe('React', () => {
     await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('XXX'));
   })
 
+  it('should useState with deps correctly', async () => {
+    const select = createApplicationStore({
+      todos: [
+        { id: 1, title: "mix flour", done: true },
+        { id: 2, title: "add egg", done: false },
+        { id: 3, title: "bake cookies", done: false }
+      ],
+      showCompleted: false
+    });
+    const App = () => {
+      const showCompleted = select(s => s.showCompleted)
+        .useState();
+      const completedTodos = select(s => s.todos.filter(t => t.done === showCompleted))
+        .useState([showCompleted])
+      return (
+        <>
+          <input
+            data-testid="checkbox"
+            type="checkbox"
+            checked={showCompleted}
+            onChange={e => select(s => s.showCompleted).replace(e.target.checked) }
+          />
+          Show completed todos
+          <hr />
+          <div data-testid="res">
+            {completedTodos.map(todo => (todo.title)).join(', ')}
+          </div>
+        </>
+      );
+    }
+    render(<App />);
+    expect(screen.getByTestId('res').textContent).toEqual('add egg, bake cookies');
+    (screen.getByTestId('checkbox') as HTMLButtonElement).click();
+    expect(screen.getByTestId('res').textContent).toEqual('mix flour');
+    (screen.getByTestId('checkbox') as HTMLButtonElement).click();
+    expect(screen.getByTestId('res').textContent).toEqual('add egg, bake cookies');
+  })
+
 });
