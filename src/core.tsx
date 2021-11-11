@@ -113,13 +113,20 @@ export const useComponentStore = function <C>(
 ) {
   const initState = React.useRef(initialState);
   const opts = React.useRef(options);
+  const justCreated = React.useRef(false);
   const select = React.useMemo(() => {
+    justCreated.current = true;
     return createComponentStore(initState.current, opts.current);
   }, []);
   React.useEffect(() => {
-    return () => select().detachFromApplicationStore()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      if (!justCreated.current) { // defend against re-loads on save
+        select().detachFromApplicationStore();
+      } else {
+        justCreated.current = false;
+      }
+    }
+  }, [select]);
   return select;
 }
 
