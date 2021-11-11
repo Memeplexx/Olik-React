@@ -58,10 +58,7 @@ const augementCore = () => {
           const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
           React.useEffect(() => {
             inputRef.current = input;
-            const val = input.read() as core.DeepReadonly<C>;
-            if (value !== val) {
-              setValue(val);
-            }
+            setValue(input.read() as core.DeepReadonly<C>);
             const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
             return () => subscription.unsubscribe();
             // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,12 +74,9 @@ const augementCore = () => {
           const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
           React.useEffect(() => {
             inputRef.current = input;
-            const val = input.read() as core.DeepReadonly<C>;
-            if (value !== val) {
-              setValue(val);
-            }
+            setValue(input.read() as core.DeepReadonly<C>);
             const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
-            return () => { if (subscription) { subscription.unsubscribe(); } }
+            return () => subscription.unsubscribe();
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
           return value;
@@ -95,18 +89,14 @@ const augementCore = () => {
           const [state, setState] = React.useState(input.getFutureState());
           React.useEffect(() => {
 
-            // Call promise, and update state because there may have been an optimistic update, or isLoading was set to false
-            const stateSnapshot = input.getFutureState().storeValue;
-            const promise = input.asPromise();
-            if (input.getFutureState().storeValue !== stateSnapshot || !state.isLoading) {
-              setState(input.getFutureState());
-            }
-
-            // Invoke then() on promise
+            // Call promise
             let running = true;
-            promise
+            input
               .then(() => { if (running) { setState(input.getFutureState()); } })
               .catch(() => { if (running) { setState(input.getFutureState()); } });
+
+            // update state because there may have been an optimistic update
+            setState(input.getFutureState());
             return () => { running = false; }
             // eslint-disable-next-line react-hooks/exhaustive-deps
           }, deps);
@@ -127,17 +117,9 @@ export const useComponentStore = function <C>(
     return createComponentStore(initState.current, opts.current);
   }, []);
   React.useEffect(() => {
-    return () => {
-      const devMode = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-      // In dev mode, React.StrictMode is enabled. We cannot allow the store to be detached in this instance because an 
-      // error will be thrown the next time a developer saves a code update and then attempts to update the nested store state.
-      if (!devMode) {
-        select().detachFromApplicationStore();
-      } else { // Reset the state. Note for future: It may be safest that this is the ONLY correct behavior (rather than detaching)
-        select().reset();
-      }
-    }
-  }, [select]);
+    return () => select().detachFromApplicationStore()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return select;
 }
 

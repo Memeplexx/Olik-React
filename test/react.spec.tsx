@@ -188,7 +188,7 @@ describe('React', () => {
       return (
         <>
           <button data-testid="btn" onClick={() => select(s => s.object.property)
-            .replace(() => new Promise(resolve => setTimeout(() => resolve('test'), 10))).asPromise()}>Click</button>
+            .replace(() => new Promise(resolve => setTimeout(() => resolve('test'), 10)))}>Click</button>
           <div data-testid="result">{state}</div>
         </>
       );
@@ -308,8 +308,7 @@ describe('React', () => {
     const select = createApplicationStore({ test: '' }, { replaceExistingStoreIfItExists: true });
     const App = () => {
       const onClick = () => select(s => s.test)
-        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
-        .asPromise();
+        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' });
       const state = select(s => s.test).useState();
       return (
         <>
