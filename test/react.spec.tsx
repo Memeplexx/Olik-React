@@ -120,7 +120,7 @@ describe('React', () => {
   it('should create a component store with a parent', () => {
     const parentSelect = createApplicationStore({
       ...initialState,
-      components: {
+      cmp: {
         component: {} as { [key: string]: { prop: string } }
       }
     }, { replaceExistingStoreIfItExists: true });
@@ -147,13 +147,13 @@ describe('React', () => {
     expect(renderCount).toEqual(1);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
     expect(renderCount).toEqual(2);
-    expect(parentSelect(s => s.components.component).read()).toEqual({ '0': { prop: 'test' } });
+    expect(parentSelect(s => s.cmp.component).read()).toEqual({ '0': { prop: 'test' } });
   });
 
   it('component store should receive props from parent', async () => {
     const parentSelect = createApplicationStore({
       ...initialState,
-      components: {
+      cmp: {
         component2: {} as { [key: string]: { prop: string, num: number } }
       }
     }, { replaceExistingStoreIfItExists: true });
@@ -178,7 +178,7 @@ describe('React', () => {
     }
     render(<Parent />);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
-    await waitFor(() => expect(parentSelect(s => s.components.component2).read()).toEqual({ '0': { prop: 1 } }));
+    await waitFor(() => expect(parentSelect(s => s.cmp.component2).read()).toEqual({ '0': { prop: 1 } }));
   })
 
   it('should respond to async actions', async () => {

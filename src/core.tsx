@@ -5,9 +5,18 @@ import * as core from 'olik';
 
 export * from 'olik';
 
+let rootSelect: any;
+
 export const createApplicationStore: typeof core['createApplicationStore'] = (state, options) => {
   augementCore();
-  return core.createApplicationStore(state, options);
+  rootSelect = core.createApplicationStore(state, options);
+  return rootSelect;
+}
+
+export const createApplicationStoreEnforcingTags: typeof core['createApplicationStoreEnforcingTags'] = (state, options) => {
+  augementCore();
+  rootSelect = core.createApplicationStoreEnforcingTags(state, options);
+  return rootSelect
 }
 
 export const createComponentStore: typeof core['createComponentStore'] = (state, options) => {
@@ -56,13 +65,13 @@ const augementCore = () => {
         return function (deps: React.DependencyList = []) {
           const inputRef = React.useRef(input);
           const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
+          const depsString = JSON.stringify(deps);
           React.useEffect(() => {
             inputRef.current = input;
             setValue(input.read() as core.DeepReadonly<C>);
             const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
             return () => subscription.unsubscribe();
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-          }, deps);
+          }, [depsString]);
           return value;
         }
       },
@@ -72,13 +81,13 @@ const augementCore = () => {
         return function (deps: React.DependencyList = []) {
           const inputRef = React.useRef(input);
           const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
+          const depsString = JSON.stringify(deps);
           React.useEffect(() => {
             inputRef.current = input;
             setValue(input.read() as core.DeepReadonly<C>);
             const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
             return () => subscription.unsubscribe();
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-          }, deps);
+          }, [depsString]);
           return value;
         }
       },
@@ -87,6 +96,7 @@ const augementCore = () => {
       useFuture: function <C>(input: core.Future<C>) {
         return function (deps: React.DependencyList = []) {
           const [state, setState] = React.useState(input.getFutureState());
+          const depsString = JSON.stringify(deps);
           React.useEffect(() => {
 
             // Call promise
@@ -98,8 +108,7 @@ const augementCore = () => {
             // update state because there may have been an optimistic update
             setState(input.getFutureState());
             return () => { running = false; }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-          }, deps);
+          }, [depsString]);
           return state;
         }
       }
@@ -111,26 +120,15 @@ export const useComponentStore = function <C>(
   initialState: C,
   options: core.OptionsForMakingAComponentStore,
 ) {
-  const initState = React.useRef(initialState);
+  const init = React.useRef(initialState);
   const opts = React.useRef(options);
-  const justCreated = React.useRef(false);
-  const select = React.useMemo(() => {
-    justCreated.current = true;
-    return createComponentStore(initState.current, opts.current);
-  }, []);
+  const select = React.useMemo(() => createComponentStore(init.current, opts.current), []);
+  const selectRef = React.useRef(select);
   React.useEffect(() => {
-    return () => {
-      if (!justCreated.current) { // defend against re-loads on save
-        select().detachFromApplicationStore();
-      } else {
-        justCreated.current = false;
-      }
+    if (!rootSelect().read().cmp?.[opts.current.componentName]?.[opts.current.instanceName]) {
+      selectRef.current = createComponentStore(init.current, opts.current);
     }
-  }, [select]);
-  return select;
+    return () => selectRef.current().detachFromApplicationStore()
+  }, []);
+  return selectRef.current;
 }
-
-
-
-// NOTES the following linting rules have been disabled in certain places:
-// react-hooks/exhaustive-deps: We cannot forward deps from the enclosing function without receiving this linting error https://stackoverflow.com/questions/56262515/how-to-handle-dependencies-array-for-custom-hooks-in-react
