@@ -1,4 +1,8 @@
-/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react-hooks/rules-of-hooks */ 
+// We are disabling the above rule because we can be sure that hooks are called in the correct
+// order due to the fact that the library functions will always be chained the same way
+
+
 import React from 'react';
 
 import * as core from 'olik';
