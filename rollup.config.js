@@ -34,7 +34,11 @@ export default {
       include: 'node_modules/**'
     }),
     typescript({
-      typescript: require('typescript'),
+      typescript: require('typescript')
     }),
   ],
+  onwarn: function(warning) {
+    if ( warning.code === 'THIS_IS_UNDEFINED' ) { /* skip this benign warning */ return; }
+    console.warn( warning.message );
+  }
 };

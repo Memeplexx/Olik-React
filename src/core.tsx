@@ -124,13 +124,17 @@ export const useComponentStore = function <C>(
   initialState: C,
   options: core.OptionsForMakingAComponentStore,
 ) {
-  const init = React.useRef(initialState);
-  const opts = React.useRef(options);
-  const select = React.useMemo(() => createComponentStore(init.current, opts.current), []);
+  const stateRef = React.useRef(initialState);
+  const optionsRef = React.useRef(options);
+  const select = React.useMemo(() => createComponentStore(stateRef.current, optionsRef.current), []);
   const selectRef = React.useRef(select);
   React.useEffect(() => {
-    if (!rootSelect().read().cmp?.[opts.current.componentName]?.[opts.current.instanceName]) {
-      selectRef.current = createComponentStore(init.current, opts.current);
+    // When the user saves their app (causing a hot-reload) the following sequence of events occurs:
+    // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
+    // This causes the app to consume an orphaned selectRef.current which causes an error to be thrown.
+    // The following statement ensures that, should a nested store be orphaned, it will be re-attached to its application store
+    if (!rootSelect?.().read().cmp?.[optionsRef.current.componentName]?.[optionsRef.current.instanceName]) {
+      selectRef.current = createComponentStore(selectRef.current().read(), optionsRef.current) as any;
     }
     return () => selectRef.current().detachFromApplicationStore()
   }, []);
