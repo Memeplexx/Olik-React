@@ -6,7 +6,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonJS from 'rollup-plugin-commonjs'
 
 export default {
-  input: `src/index.ts`,
+  input: `./out-tsc/index.js`,
   external: ['react', 'olik'],
   output: [
     {
