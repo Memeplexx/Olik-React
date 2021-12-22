@@ -107,7 +107,7 @@ export const useNestedStore = function <C>(
   const stateRef = React.useRef(arg.state);
   const optionsRef = React.useRef(arg);
   const select = React.useMemo(() => core.createStore({ name: optionsRef.current.name, state: stateRef.current }), []);
-  const ref = React.useMemo(() => core.nestStoreIfPossible({ store: select as any, ...optionsRef.current }), []);
+  const ref = React.useMemo(() => core.nestStoreIfPossible({ store: select as any, ...optionsRef.current }), [select]);
   const selectRef = React.useRef(select);
   const refRef = React.useRef(ref);
   React.useEffect(() => {
