@@ -45,11 +45,11 @@ core.augment({
     useState: function <S>(input: core.Readable<S>) {
       return function (deps: React.DependencyList = []) {
         const inputRef = React.useRef(input);
-        const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<S>);
+        const [value, setValue] = React.useState(inputRef.current.state as core.DeepReadonly<S>);
         const depsString = JSON.stringify(deps);
         React.useEffect(() => {
           inputRef.current = input;
-          setValue(input.read() as core.DeepReadonly<S>);
+          setValue(input.state as core.DeepReadonly<S>);
           const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<S>))
           return () => subscription.unsubscribe();
         }, [depsString]);
@@ -61,11 +61,11 @@ core.augment({
     useState: function <C>(input: core.Derivation<C>) {
       return function (deps: React.DependencyList = []) {
         const inputRef = React.useRef(input);
-        const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
+        const [value, setValue] = React.useState(inputRef.current.state as core.DeepReadonly<C>);
         const depsString = JSON.stringify(deps);
         React.useEffect(() => {
           inputRef.current = input;
-          setValue(input.read() as core.DeepReadonly<C>);
+          setValue(input.state as core.DeepReadonly<C>);
           const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
           return () => subscription.unsubscribe();
         }, [depsString]);
@@ -106,8 +106,8 @@ export const useNestedStore = function <C>(
 ) {
   const stateRef = React.useRef(arg.state);
   const optionsRef = React.useRef(arg);
-  const select = React.useMemo(() => core.createStore(optionsRef.current.name)(stateRef.current) as any, []);
-  const ref = React.useMemo(() => core.nestStoreIfPossible(select, optionsRef.current), []);
+  const select = React.useMemo(() => core.createStore({ name: optionsRef.current.name, state: stateRef.current }), []);
+  const ref = React.useMemo(() => core.nestStoreIfPossible({ store: select as any, ...optionsRef.current }), []);
   const selectRef = React.useRef(select);
   const refRef = React.useRef(ref);
   React.useEffect(() => {
@@ -115,9 +115,9 @@ export const useNestedStore = function <C>(
     // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
     // This causes the app to consume an orphaned selectRef.current which causes an error to be thrown.
     // The following statement ensures that, should a nested store be orphaned, it will be re-attached to its application store
-    if (core.getStoreByName(optionsRef.current.containerStoreName)?.read().nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
-      selectRef.current = core.createStore(optionsRef.current.name)(selectRef.current.read()) as any;
-      refRef.current = core.nestStoreIfPossible(selectRef.current, optionsRef.current);
+    if (core.getStoreByName(optionsRef.current.containerStoreName)?.state.nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
+      selectRef.current = core.createStore({ name: optionsRef.current.name, state: selectRef.current.state }) as any;
+      refRef.current = core.nestStoreIfPossible({ store: selectRef.current as any, ...optionsRef.current });
     }
     return () => refRef.current.detach()
   }, []);

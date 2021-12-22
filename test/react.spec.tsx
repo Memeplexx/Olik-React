@@ -15,14 +15,14 @@ describe('React', () => {
   };
 
   it('should create and update a store', () => {
-    const select = createStore('')(initialState);
+    const select = createStore({ name: '', state: initialState });
     select.object.property
       .replace('test');
-    expect(select.read().object.property).toEqual('test');
+    expect(select.state.object.property).toEqual('test');
   })
 
   it('should useSelector', () => {
-    const select = createStore('')(initialState);
+    const select = createStore({ name: '', state: initialState });
     const App = () => {
       const result = select.object.property.useState();
       return (
@@ -39,7 +39,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with no deps', async () => {
-    const select = createStore('')(initialState);
+    const select = createStore({ name: '', state: initialState });
     let calcCount = 0;
     const App = () => {
       const result = derive(
@@ -65,7 +65,7 @@ describe('React', () => {
   });
 
   it('should useDerivation with deps', async () => {
-    const get = createStore('')(initialState);
+    const get = createStore({ name: '', state: initialState });
     let calcCount = 0;
     const App = () => {
       const [str, setStr] = React.useState('');
@@ -118,10 +118,13 @@ describe('React', () => {
   });
 
   it('should create a component store with a parent', () => {
-    const parentSelect = createStore('xxx')({
-      ...initialState,
-      nested: {
-        component: {} as { [key: string]: { prop: string } }
+    const parentSelect = createStore({
+      name: 'xxx',
+      state: {
+        ...initialState,
+        nested: {
+          component: {} as { [key: string]: { prop: string } }
+        }
       }
     });
     let renderCount = 0;
@@ -152,14 +155,17 @@ describe('React', () => {
     expect(renderCount).toEqual(1);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
     expect(renderCount).toEqual(2);
-    expect(parentSelect.nested.component.read()).toEqual({ '0': { prop: 'test' } });
+    expect(parentSelect.nested.component.state).toEqual({ '0': { prop: 'test' } });
   });
 
   it('component store should receive props from parent', async () => {
-    const parentSelect = createStore('yyy')({
-      ...initialState,
-      nested: {
-        component2: {} as { [key: string]: { prop: string, num: number } }
+    const parentSelect = createStore({
+      name: 'yyy',
+      state: {
+        ...initialState,
+        nested: {
+          component2: {} as { [key: string]: { prop: string, num: number } }
+        }
       }
     });
     const Child: React.FunctionComponent<{ num: number }> = (props) => {
@@ -188,11 +194,11 @@ describe('React', () => {
     }
     render(<Parent />);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
-    await waitFor(() => expect(parentSelect.nested.component2.read()).toEqual({ '0': { prop: 1 } }));
+    await waitFor(() => expect(parentSelect.nested.component2.state).toEqual({ '0': { prop: 1 } }));
   })
 
   it('should respond to async actions', async () => {
-    const select = createStore('')(initialState);
+    const select = createStore({ name: '', state: initialState });
     const App = () => {
       const state = select.object.property.useState();
       return (
@@ -209,7 +215,7 @@ describe('React', () => {
   });
 
   it('should respond to async queries', async () => {
-    const select = createStore('')(initialState);
+    const select = createStore({ name: '', state: initialState });
     const fetchString = () => new Promise<string>(resolve => setTimeout(() => resolve('test'), 10))
     const App = () => {
       const future = select.object.property.replace(fetchString).useFuture();
@@ -234,8 +240,11 @@ describe('React', () => {
   it('should be able to paginate', async () => {
     const todos = new Array(15).fill(null).map((e, i) => ({ id: i + 1, text: `value ${i + 1}` }));
     type Todo = { id: Number, text: string };
-    const select = createStore('')({
-      toPaginate: {} as { [key: string]: Todo[] },
+    const select = createStore({
+      name: '',
+      state: {
+        toPaginate: {} as { [key: string]: Todo[] },
+      }
     });
     const fetchTodos = (index: number) => new Promise<Todo[]>(resolve => setTimeout(() => resolve(todos.slice(index * 10, (index * 10) + 10)), 10));
     const App = () => {
@@ -270,8 +279,11 @@ describe('React', () => {
   })
 
   it('should be able to paginate', async () => {
-    const select = createStore('')({
-      storeNum: -1
+    const select = createStore({
+      name: '',
+      state: {
+        storeNum: -1
+      }
     });
     const fetchNum = (num: number) => new Promise<number>(resolve => setTimeout(() => resolve(num), 100));
     const App = () => {
@@ -298,7 +310,7 @@ describe('React', () => {
   })
 
   it('should support optimistic updates correctly with a future', async () => {
-    const select = createStore('')({ test: '' });
+    const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const future = select.test
         .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
@@ -315,7 +327,7 @@ describe('React', () => {
   })
 
   it('should support optimistic updates correctly with a promise', async () => {
-    const select = createStore('')({ test: '' });
+    const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const onClick = () => select.test
         .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' });
@@ -334,13 +346,16 @@ describe('React', () => {
   })
 
   it('should useState with deps correctly', async () => {
-    const select = createStore('')({
-      todos: [
-        { id: 1, title: "mix flour", done: true },
-        { id: 2, title: "add egg", done: false },
-        { id: 3, title: "bake cookies", done: false }
-      ],
-      showCompleted: false
+    const select = createStore({
+      name: '',
+      state: {
+        todos: [
+          { id: 1, title: "mix flour", done: true },
+          { id: 2, title: "add egg", done: false },
+          { id: 3, title: "bake cookies", done: false }
+        ],
+        showCompleted: false
+      }
     });
     const App = () => {
       const showCompleted = select.showCompleted
@@ -353,7 +368,7 @@ describe('React', () => {
             data-testid="checkbox"
             type="checkbox"
             checked={showCompleted}
-            onChange={e => select.showCompleted.replace(e.target.checked) }
+            onChange={e => select.showCompleted.replace(e.target.checked)}
           />
           Show completed todos
           <hr />
