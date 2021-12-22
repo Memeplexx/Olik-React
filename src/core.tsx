@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/rules-of-hooks */ 
+/* eslint-disable react-hooks/rules-of-hooks */
 // We are disabling the above rule because we can be sure that hooks are called in the correct
 // order due to the fact that the library functions will always be chained the same way
 
@@ -9,31 +9,12 @@ import * as core from 'olik';
 
 export * from 'olik';
 
-let rootSelect: any;
-
-export const createApplicationStore: typeof core['createApplicationStore'] = (state, options) => {
-  augementCore();
-  rootSelect = core.createApplicationStore(state, options);
-  return rootSelect;
-}
-
-export const createApplicationStoreEnforcingTags: typeof core['createApplicationStoreEnforcingTags'] = (state, options) => {
-  augementCore();
-  rootSelect = core.createApplicationStoreEnforcingTags(state, options);
-  return rootSelect
-}
-
-export const createComponentStore: typeof core['createComponentStore'] = (state, options) => {
-  augementCore();
-  return core.createComponentStore(state, options);
-}
-
 declare module 'olik' {
-  interface StoreOrDerivation<C> {
+  interface Readable<S> {
     /**
      * Returns a hook which reads the selected node of the state tree
      */
-    useState: (deps?: React.DependencyList) => C;
+    useState: (deps?: React.DependencyList) => S;
   }
   interface Derivation<R> {
     /**
@@ -59,84 +40,86 @@ declare module 'olik' {
   }
 }
 
-let coreHasBeenAgmented = false;
-const augementCore = () => {
-  if (coreHasBeenAgmented) { return; }
-  coreHasBeenAgmented = true;
-  core.augment({
-    selection: {
-      useState: function <C>(input: core.StoreOrDerivation<C>) {
-        return function (deps: React.DependencyList = []) {
-          const inputRef = React.useRef(input);
-          const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
-          const depsString = JSON.stringify(deps);
-          React.useEffect(() => {
-            inputRef.current = input;
-            setValue(input.read() as core.DeepReadonly<C>);
-            const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
-            return () => subscription.unsubscribe();
-          }, [depsString]);
-          return value;
-        }
-      },
+core.augment({
+  selection: {
+    useState: function <S>(input: core.Readable<S>) {
+      return function (deps: React.DependencyList = []) {
+        const inputRef = React.useRef(input);
+        const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<S>);
+        const depsString = JSON.stringify(deps);
+        React.useEffect(() => {
+          inputRef.current = input;
+          setValue(input.read() as core.DeepReadonly<S>);
+          const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<S>))
+          return () => subscription.unsubscribe();
+        }, [depsString]);
+        return value;
+      }
     },
-    derivation: {
-      useState: function <C>(input: core.Derivation<C>) {
-        return function (deps: React.DependencyList = []) {
-          const inputRef = React.useRef(input);
-          const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
-          const depsString = JSON.stringify(deps);
-          React.useEffect(() => {
-            inputRef.current = input;
-            setValue(input.read() as core.DeepReadonly<C>);
-            const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
-            return () => subscription.unsubscribe();
-          }, [depsString]);
-          return value;
-        }
-      },
+  },
+  derivation: {
+    useState: function <C>(input: core.Derivation<C>) {
+      return function (deps: React.DependencyList = []) {
+        const inputRef = React.useRef(input);
+        const [value, setValue] = React.useState(inputRef.current.read() as core.DeepReadonly<C>);
+        const depsString = JSON.stringify(deps);
+        React.useEffect(() => {
+          inputRef.current = input;
+          setValue(input.read() as core.DeepReadonly<C>);
+          const subscription = inputRef.current.onChange(arg => setValue(arg as core.DeepReadonly<C>))
+          return () => subscription.unsubscribe();
+        }, [depsString]);
+        return value;
+      }
     },
-    future: {
-      useFuture: function <C>(input: core.Future<C>) {
-        return function (deps: React.DependencyList = []) {
-          const [state, setState] = React.useState(input.getFutureState());
-          const depsString = JSON.stringify(deps);
-          React.useEffect(() => {
+  },
+  future: {
+    useFuture: function <C>(input: core.Future<C>) {
+      return function (deps: React.DependencyList = []) {
+        const [state, setState] = React.useState(input.getFutureState());
+        const depsString = JSON.stringify(deps);
+        React.useEffect(() => {
 
-            // Call promise
-            let running = true;
-            input
-              .then(() => { if (running) { setState(input.getFutureState()); } })
-              .catch(() => { if (running) { setState(input.getFutureState()); } });
+          // Call promise
+          let running = true;
+          input
+            .then(() => { if (running) { setState(input.getFutureState()); } })
+            .catch(() => { if (running) { setState(input.getFutureState()); } });
 
-            // update state because there may have been an optimistic update
-            setState(input.getFutureState());
-            return () => { running = false; }
-          }, [depsString]);
-          return state;
-        }
+          // update state because there may have been an optimistic update
+          setState(input.getFutureState());
+          return () => { running = false; }
+        }, [depsString]);
+        return state;
       }
     }
-  })
-}
+  }
+})
 
-export const useComponentStore = function <C>(
-  initialState: C,
-  options: core.OptionsForMakingAComponentStore,
+export const useNestedStore = function <C>(
+  arg: {
+    state: C,
+    name: string,
+    instanceName: string | number;
+    containerStoreName: string;
+  },
 ) {
-  const stateRef = React.useRef(initialState);
-  const optionsRef = React.useRef(options);
-  const select = React.useMemo(() => createComponentStore(stateRef.current, optionsRef.current), []);
+  const stateRef = React.useRef(arg.state);
+  const optionsRef = React.useRef(arg);
+  const select = React.useMemo(() => core.createStore(optionsRef.current.name)(stateRef.current) as any, []);
+  const ref = React.useMemo(() => core.nestStoreIfPossible(select, optionsRef.current), []);
   const selectRef = React.useRef(select);
+  const refRef = React.useRef(ref);
   React.useEffect(() => {
     // When the user saves their app (causing a hot-reload) the following sequence of events occurs:
     // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
     // This causes the app to consume an orphaned selectRef.current which causes an error to be thrown.
     // The following statement ensures that, should a nested store be orphaned, it will be re-attached to its application store
-    if (!rootSelect?.().read().cmp?.[optionsRef.current.componentName]?.[optionsRef.current.instanceName]) {
-      selectRef.current = createComponentStore(selectRef.current().read(), optionsRef.current) as any;
+    if (core.getStoreByName(optionsRef.current.containerStoreName)?.read().nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
+      selectRef.current = core.createStore(optionsRef.current.name)(selectRef.current.read()) as any;
+      refRef.current = core.nestStoreIfPossible(selectRef.current, optionsRef.current);
     }
-    return () => selectRef.current().detachFromApplicationStore()
+    return () => refRef.current.detach()
   }, []);
   return selectRef.current;
 }
