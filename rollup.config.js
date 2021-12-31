@@ -17,18 +17,15 @@ export default {
       file: pkg.module,
       format: 'es', // the preferred format
     },
-    {
-      file: pkg.browser,
-      format: 'umd',
-      name: 'olik-react', // the global which can be used in a browser
-    }
   ].map(e => ({
     ...e, sourcemap: true, globals: {
       'react': 'React'
     }
   })),
   plugins: [
-    resolve(),
+    resolve({
+      mainFields: ["main", "module", "browser"]
+    }),
     peerDepsExternal(),
     commonJS({
       include: 'node_modules/**'

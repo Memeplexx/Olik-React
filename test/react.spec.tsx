@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { createStore, derive, useNestedStore } from '../src';
+import { augment, createStore, derive, useNestedStore } from '../src';
 
 describe('React', () => {
 
