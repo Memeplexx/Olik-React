@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { augment, createStore, derive, useNestedStore } from '../src';
+import { augment, createStore, derive, enableAsyncActionPayloads, useNestedStore } from '../src';
 
 describe('React', () => {
 
@@ -13,6 +13,10 @@ describe('React', () => {
     array: [{ id: 1, value: 'one' }, { id: 2, value: 'two' }, { id: 3, value: 'three' }],
     string: 'b',
   };
+
+  beforeAll(() => {
+    enableAsyncActionPayloads();
+  })
 
   it('should create and update a store', () => {
     const select = createStore({ name: '', state: initialState });
