@@ -123,7 +123,8 @@ export const useNestedStore = function <C>(
     // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
     // This causes the app to consume an removed selectRef.current which causes an error to be thrown.
     // The following statement ensures that, should a nested store have been removed, it will be re-created within its application store
-    if (getStoreByName(optionsRef.current.containerStoreName)?.state.nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
+    const containerStore = getStoreByName(optionsRef.current.containerStoreName);
+    if (containerStore && !containerStore?.state.nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
       selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.state }) as any;
       refRef.current = nestStoreIfPossible({ store: selectRef.current as any, ...optionsRef.current });
     }

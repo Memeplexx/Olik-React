@@ -1,6 +1,6 @@
 {
   "name": "olik-react",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
@@ -19,7 +19,7 @@
   "dependencies": {
   },
   "devDependencies": {
-    "olik": "^0.1.25",
+    "olik": "^0.1.26",
     "@testing-library/jest-dom": "^5.11.10",
     "@testing-library/react": "^11.2.6",
     "@types/jest": "^26.0.7",
