@@ -6,10 +6,10 @@ import {
   createStore,
   DeepReadonly,
   Derivation,
+  detachNestedStore,
   Future,
   FutureState,
   getStoreByName,
-  nestStoreIfPossible,
   Readable,
 } from 'olik';
 
@@ -108,27 +108,23 @@ export const useNestedStore = function <C>(
   arg: {
     state: C,
     name: string,
-    instanceName: string | number;
-    containerName: string;
+    tryToNestWithinStore: string;
   },
 ) {
   const stateRef = React.useRef(arg.state);
   const optionsRef = React.useRef(arg);
-  const select = React.useMemo(() => createStore({ name: optionsRef.current.name, state: stateRef.current }), []);
-  const ref = React.useMemo(() => nestStoreIfPossible({ store: select as any, ...optionsRef.current }), [select]);
+  const select = React.useMemo(() => createStore({ name: optionsRef.current.name, state: stateRef.current, tryToNestWithinStore: arg.tryToNestWithinStore }), [arg.tryToNestWithinStore]);
   const selectRef = React.useRef(select);
-  const refRef = React.useRef(ref);
   React.useEffect(() => {
     // When the user saves their app (causing a hot-reload) the following sequence of events occurs:
     // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
     // This causes the app to consume an removed selectRef.current which causes an error to be thrown.
     // The following statement ensures that, should a nested store have been removed, it will be re-created within its application store
-    const containerStore = getStoreByName(optionsRef.current.containerName);
-    if (containerStore && !containerStore?.state.nested?.[optionsRef.current.name]?.[optionsRef.current.instanceName]) {
-      selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.state }) as any;
-      refRef.current = nestStoreIfPossible({ store: selectRef.current as any, ...optionsRef.current });
+    const containerStore = getStoreByName(optionsRef.current.tryToNestWithinStore);
+    if (containerStore && !containerStore?.state.nested?.[optionsRef.current.name]?.[(selectRef.current as any).internals.nestedStoreInfo?.instanceId]) {
+      selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.state, tryToNestWithinStore: arg.tryToNestWithinStore }) as any;
     }
-    return () => refRef.current.detach()
-  }, []);
+    return () => detachNestedStore(selectRef.current as any);
+  }, [arg.tryToNestWithinStore]);
   return selectRef.current;
 }

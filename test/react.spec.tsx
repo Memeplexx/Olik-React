@@ -4,7 +4,7 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { augment, createStore, derive, enableAsyncActionPayloads, useNestedStore } from '../src';
+import { augment, createStore, derive, enableAsyncActionPayloads, enableNesting, useNestedStore } from '../src';
 
 describe('React', () => {
 
@@ -16,6 +16,7 @@ describe('React', () => {
 
   beforeAll(() => {
     enableAsyncActionPayloads();
+    enableNesting();
   })
 
   it('should create and update a store', () => {
@@ -101,7 +102,7 @@ describe('React', () => {
   it('should create a component store without a parent', () => {
     let renderCount = 0;
     const App = () => {
-      const select = useNestedStore({ name: 'unhosted', instanceName: '0', containerName: 'xxx', state: initialState });
+      const select = useNestedStore({ name: 'unhosted', tryToNestWithinStore: 'xxx', state: initialState });
       const result = select.object.property.useState();
       renderCount++;
       return (
@@ -135,8 +136,7 @@ describe('React', () => {
     const Child = () => {
       const select = useNestedStore({
         name: 'component',
-        instanceName: '0',
-        containerName: 'xxx',
+        tryToNestWithinStore: 'xxx',
         state: { prop: '' },
       });
       const result = select.prop.useState();
@@ -175,8 +175,7 @@ describe('React', () => {
     const Child: React.FunctionComponent<{ num: number }> = (props) => {
       const select = useNestedStore({
         name: 'component2',
-        instanceName: '0',
-        containerName: 'yyy',
+        tryToNestWithinStore: 'yyy',
         state: { prop: 0 },
       });
       React.useEffect(() => select.prop.replace(props.num), [props.num, select])

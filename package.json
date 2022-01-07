@@ -1,6 +1,6 @@
 {
   "name": "olik-react",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
@@ -43,10 +43,10 @@
     "rollup-plugin-typescript2": "^0.29.0",
     "ts-jest": "^26.1.4",
     "typescript": "4.0.3",
-    "olik": "^0.1.27"
+    "olik": "^0.1.31"
   },
   "peerDependencies": {
-    "olik": "^0.1.27"
+    "olik": "^0.1.31"
   },
   "jest": {
     "transform": {
