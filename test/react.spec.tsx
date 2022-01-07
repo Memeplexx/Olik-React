@@ -101,7 +101,7 @@ describe('React', () => {
   it('should create a component store without a parent', () => {
     let renderCount = 0;
     const App = () => {
-      const select = useNestedStore({ name: 'unhosted', instanceName: '0', containerStoreName: 'xxx', state: initialState });
+      const select = useNestedStore({ name: 'unhosted', instanceName: '0', containerName: 'xxx', state: initialState });
       const result = select.object.property.useState();
       renderCount++;
       return (
@@ -136,7 +136,7 @@ describe('React', () => {
       const select = useNestedStore({
         name: 'component',
         instanceName: '0',
-        containerStoreName: 'xxx',
+        containerName: 'xxx',
         state: { prop: '' },
       });
       const result = select.prop.useState();
@@ -176,7 +176,7 @@ describe('React', () => {
       const select = useNestedStore({
         name: 'component2',
         instanceName: '0',
-        containerStoreName: 'yyy',
+        containerName: 'yyy',
         state: { prop: 0 },
       });
       React.useEffect(() => select.prop.replace(props.num), [props.num, select])
