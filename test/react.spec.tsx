@@ -5,7 +5,7 @@ import { render } from '@testing-library/react';
 import React from 'react';
 
 import { augmentOlikForReact, useNestedStore } from '../src';
-import { createStore, derive, enableAsyncActionPayloads, enableNesting } from 'olik';
+import { createStore, derive, importOlikAsyncModule, importOlikNestingModule } from 'olik';
 
 describe('React', () => {
 
@@ -17,8 +17,8 @@ describe('React', () => {
 
   beforeAll(() => {
     augmentOlikForReact();
-    enableAsyncActionPayloads();
-    enableNesting();
+    importOlikAsyncModule();
+    importOlikNestingModule();
   })
 
   it('should create and update a store', () => {
@@ -104,7 +104,7 @@ describe('React', () => {
   it('should create a component store without a parent', () => {
     let renderCount = 0;
     const App = () => {
-      const select = useNestedStore({ name: 'unhosted', tryToNestWithinStore: 'xxx', state: initialState });
+      const select = useNestedStore({ name: 'unhosted', hostStoreName: 'xxx', instanceId: 0, state: initialState });
       const result = select.object.property.useState();
       renderCount++;
       return (
@@ -138,7 +138,8 @@ describe('React', () => {
     const Child = () => {
       const select = useNestedStore({
         name: 'component',
-        tryToNestWithinStore: 'xxx',
+        hostStoreName: 'xxx',
+        instanceId: 0,
         state: { prop: '' },
       });
       const result = select.prop.useState();
@@ -177,7 +178,8 @@ describe('React', () => {
     const Child: React.FunctionComponent<{ num: number }> = (props) => {
       const select = useNestedStore({
         name: 'component2',
-        tryToNestWithinStore: 'yyy',
+        hostStoreName: 'yyy',
+        instanceId: 0,
         state: { prop: 0 },
       });
       React.useEffect(() => select.prop.replace(props.num), [props.num, select])

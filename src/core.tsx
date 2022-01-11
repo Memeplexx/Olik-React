@@ -106,23 +106,24 @@ export const useNestedStore = function <C>(
   arg: {
     state: C,
     name: string,
-    tryToNestWithinStore: string;
+    hostStoreName: string;
+    instanceId: string | number;
   },
 ) {
   const stateRef = React.useRef(arg.state);
   const optionsRef = React.useRef(arg);
-  const select = React.useMemo(() => createStore({ name: optionsRef.current.name, state: stateRef.current, tryToNestWithinStore: arg.tryToNestWithinStore }), [arg.tryToNestWithinStore]);
+  const select = React.useMemo(() => createStore({ name: optionsRef.current.name, state: stateRef.current, nestStore: { hostStoreName: optionsRef.current.hostStoreName, instanceId: optionsRef.current.instanceId } }), []);
   const selectRef = React.useRef(select);
   React.useEffect(() => {
     // When the user saves their app (causing a hot-reload) the following sequence of events occurs:
     // hook is run, useMemo (store is created), useEffect, useEffect cleanup (store is detached), hook is run, useMemo is NOT rerun (so store is NOT recreated).
     // This causes the app to consume an removed selectRef.current which causes an error to be thrown.
     // The following statement ensures that, should a nested store have been removed, it will be re-created within its application store
-    const containerStore = getStoreByName(optionsRef.current.tryToNestWithinStore);
+    const containerStore = getStoreByName(optionsRef.current.hostStoreName);
     if (containerStore && !containerStore?.state.nested?.[optionsRef.current.name]?.[(selectRef.current as any).internals.nestedStoreInfo?.instanceId]) {
-      selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.state, tryToNestWithinStore: arg.tryToNestWithinStore }) as any;
+      selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.state, nestStore: { hostStoreName: optionsRef.current.hostStoreName, instanceId: optionsRef.current.instanceId } }) as any;
     }
     return () => detachNestedStore(selectRef.current as any);
-  }, [arg.tryToNestWithinStore]);
+  }, []);
   return selectRef.current;
 }
