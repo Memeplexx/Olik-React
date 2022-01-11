@@ -4,7 +4,8 @@ import { screen, waitFor } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import React from 'react';
 
-import { augment, createStore, derive, enableAsyncActionPayloads, enableNesting, useNestedStore } from '../src';
+import { augmentOlikForReact, useNestedStore } from '../src';
+import { createStore, derive, enableAsyncActionPayloads, enableNesting } from 'olik';
 
 describe('React', () => {
 
@@ -15,6 +16,7 @@ describe('React', () => {
   };
 
   beforeAll(() => {
+    augmentOlikForReact();
     enableAsyncActionPayloads();
     enableNesting();
   })

@@ -15,8 +15,6 @@ import {
 
 import React from 'react';
 
-export * from 'olik';
-
 declare module 'olik' {
   interface Readable<S> {
     /**
@@ -48,7 +46,7 @@ declare module 'olik' {
   }
 }
 
-augment({
+export const augmentOlikForReact = () => augment({
   selection: {
     useState: function <S>(input: Readable<S>) {
       return function (deps: React.DependencyList = []) {
