@@ -82,18 +82,18 @@ export const augmentOlikForReact = () => augment({
   future: {
     useFuture: function <C>(input: Future<C>) {
       return function (deps: React.DependencyList = []) {
-        const [state, setState] = React.useState(input.getFutureState());
+        const [state, setState] = React.useState(input.state);
         const depsString = JSON.stringify(deps);
         React.useEffect(() => {
 
           // Call promise
           let running = true;
           input
-            .then(() => { if (running) { setState(input.getFutureState()); } })
-            .catch(() => { if (running) { setState(input.getFutureState()); } });
+            .then(() => { if (running) { setState(input.state); } })
+            .catch(() => { if (running) { setState(input.state); } });
 
           // update state because there may have been an optimistic update
-          setState(input.getFutureState());
+          setState(input.state);
           return () => { running = false; }
         }, [depsString]);
         return state;
