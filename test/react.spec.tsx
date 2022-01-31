@@ -24,17 +24,17 @@ describe('React', () => {
   it('should create and update a store', () => {
     const select = createStore({ name: '', state: initialState });
     select.object.property
-      .replace('test');
-    expect(select.state.object.property).toEqual('test');
+      .$replace('test');
+    expect(select.$state.object.property).toEqual('test');
   })
 
   it('should useSelector', () => {
     const select = createStore({ name: '', state: initialState });
     const App = () => {
-      const result = select.object.property.useState();
+      const result = select.object.property.$useState();
       return (
         <>
-          <button onClick={() => select.object.property.replace('test')}>Click</button>
+          <button onClick={() => select.object.property.$replace('test')}>Click</button>
           <div data-testid="result">{result}</div>
         </>
       );
@@ -52,13 +52,13 @@ describe('React', () => {
       const result = derive(
         select.string,
         select.object.property,
-      ).with((str, prop) => {
+      ).$with((str, prop) => {
         calcCount++;
         return str + prop;
-      }).useState();
+      }).$useState();
       return (
         <>
-          <button onClick={() => select.object.property.replace('test')}>Click</button>
+          <button onClick={() => select.object.property.$replace('test')}>Click</button>
           <div data-testid="result">{result}</div>
         </>
       );
@@ -80,10 +80,10 @@ describe('React', () => {
       const result = derive(
         get.string,
         get.object.property,
-      ).with((str, prop) => {
+      ).$with((str, prop) => {
         calcCount++;
         return str + prop + num;
-      }).useState([num]);
+      }).$useState([num]);
       return (
         <>
           <button data-testid="btn-1" onClick={() => setStr('test')}>Click</button>
@@ -105,12 +105,12 @@ describe('React', () => {
     let renderCount = 0;
     const App = () => {
       const select = useNestedStore({ name: 'unhosted', hostStoreName: 'xxx', instanceId: 0, state: initialState });
-      const result = select.object.property.useState();
+      const result = select.object.property.$useState();
       renderCount++;
       return (
         <>
-          <button data-testid="btn-1" onClick={() => select.object.property.replace('test')}>Click</button>
-          <button data-testid="btn-2" onClick={() => select.string.replace('test')}>Click</button>
+          <button data-testid="btn-1" onClick={() => select.object.property.$replace('test')}>Click</button>
+          <button data-testid="btn-2" onClick={() => select.string.$replace('test')}>Click</button>
           <div data-testid="result">{result}</div>
         </>
       );
@@ -142,11 +142,11 @@ describe('React', () => {
         instanceId: 0,
         state: { prop: '' },
       });
-      const result = select.prop.useState();
+      const result = select.prop.$useState();
       renderCount++;
       return (
         <>
-          <button data-testid="btn" onClick={() => select.prop.replace('test')}>Click</button>
+          <button data-testid="btn" onClick={() => select.prop.$replace('test')}>Click</button>
           <div>{result}</div>
         </>
       );
@@ -162,7 +162,7 @@ describe('React', () => {
     expect(renderCount).toEqual(1);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
     expect(renderCount).toEqual(2);
-    expect(parentSelect.nested.component.state).toEqual({ '0': { prop: 'test' } });
+    expect(parentSelect.nested.component.$state).toEqual({ '0': { prop: 'test' } });
   });
 
   it('component store should receive props from parent', async () => {
@@ -182,8 +182,8 @@ describe('React', () => {
         instanceId: 0,
         state: { prop: 0 },
       });
-      React.useEffect(() => select.prop.replace(props.num), [props.num, select])
-      const result = select.prop.useState([props.num]);
+      React.useEffect(() => select.prop.$replace(props.num), [props.num, select])
+      const result = select.prop.$useState([props.num]);
       return (
         <>
           <div>{result}</div>
@@ -201,17 +201,17 @@ describe('React', () => {
     }
     render(<Parent />);
     (screen.getByTestId('btn') as HTMLButtonElement).click();
-    await waitFor(() => expect(parentSelect.nested.component2.state).toEqual({ '0': { prop: 1 } }));
+    await waitFor(() => expect(parentSelect.nested.component2.$state).toEqual({ '0': { prop: 1 } }));
   })
 
   it('should respond to async actions', async () => {
     const select = createStore({ name: '', state: initialState });
     const App = () => {
-      const state = select.object.property.useState();
+      const state = select.object.property.$useState();
       return (
         <>
           <button data-testid="btn" onClick={() => select.object.property
-            .replace(() => new Promise(resolve => setTimeout(() => resolve('test'), 10)))}>Click</button>
+            .$replace(() => new Promise(resolve => setTimeout(() => resolve('test'), 10)))}>Click</button>
           <div data-testid="result">{state}</div>
         </>
       );
@@ -225,7 +225,7 @@ describe('React', () => {
     const select = createStore({ name: '', state: initialState });
     const fetchString = () => new Promise<string>(resolve => setTimeout(() => resolve('test'), 10))
     const App = () => {
-      const future = select.object.property.replace(fetchString).useFuture();
+      const future = select.object.property.$replace(fetchString).$useFuture();
       return (
         <>
           <div data-testid="result">{future.storeValue}</div>
@@ -257,8 +257,8 @@ describe('React', () => {
     const App = () => {
       const [index, setIndex] = React.useState(0);
       const future = select.toPaginate[index]
-        .replaceAll(() => fetchTodos(index))
-        .useFuture([index]);
+        .$replace(() => fetchTodos(index))
+        .$useFuture([index]);
       return (
         <>
           <button data-testid="btn" onClick={() => setIndex(1)}>Click</button>
@@ -296,8 +296,8 @@ describe('React', () => {
     const App = () => {
       const [num, setNum] = React.useState(0);
       const future = select.storeNum
-        .replace(() => fetchNum(num))
-        .useFuture([num]);
+        .$replace(() => fetchNum(num))
+        .$useFuture([num]);
       return (
         <>
           <div data-testid="num">{num}</div>
@@ -320,8 +320,8 @@ describe('React', () => {
     const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const future = select.test
-        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
-        .useFuture();
+        .$replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
+        .$useFuture();
       return (
         <>
           <div data-testid="res">{future.storeValue}</div>
@@ -337,8 +337,8 @@ describe('React', () => {
     const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const onClick = () => select.test
-        .replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' });
-      const state = select.test.useState();
+        .$replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' });
+      const state = select.test.$useState();
       return (
         <>
           <div data-testid="res">{state}</div>
@@ -366,16 +366,16 @@ describe('React', () => {
     });
     const App = () => {
       const showCompleted = select.showCompleted
-        .useState();
-      const completedTodos = select.todos.filter.done.eq(showCompleted)
-        .useState([showCompleted])
+        .$useState();
+      const completedTodos = select.todos.$filter.done.$eq(showCompleted)
+        .$useState([showCompleted])
       return (
         <>
           <input
             data-testid="checkbox"
             type="checkbox"
             checked={showCompleted}
-            onChange={e => select.showCompleted.replace(e.target.checked)}
+            onChange={e => select.showCompleted.$replace(e.target.checked)}
           />
           Show completed todos
           <hr />
