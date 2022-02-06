@@ -6,7 +6,6 @@ import {
   createStore,
   DeepReadonly,
   Derivation,
-  detachNestedStore,
   Future,
   FutureState,
   getStoreByName,
@@ -123,7 +122,7 @@ export const useNestedStore = function <C extends object | number | string | boo
     if (containerStore && !containerStore?.$state.nested?.[optionsRef.current.name]?.[(selectRef.current as any).$internals.nestedStoreInfo?.instanceId]) {
       selectRef.current = createStore({ name: optionsRef.current.name, state: selectRef.current.$state, nestStore: { hostStoreName: optionsRef.current.hostStoreName, instanceId: optionsRef.current.instanceId } }) as any;
     }
-    return () => detachNestedStore(selectRef.current as any);
+    return () => (selectRef.current as any).$detachStore();
   }, []);
   return selectRef.current;
 }
