@@ -3725,10 +3725,10 @@ object.values@^1.1.4:
     define-properties "^1.1.3"
     es-abstract "^1.18.2"
 
-olik@^0.1.47:
-  version "0.1.47"
-  resolved "https://registry.yarnpkg.com/olik/-/olik-0.1.47.tgz#203fb93b1b5438cfed7e85fc442b6c3ec1ca08f1"
-  integrity sha512-MzuO9ojQraVHT2iWd66hinN9ireccKuA/7gzonWIZjgmDnYIkUR5d9xhgWAjfr94vIiz7EBTZroKxAf4zrWWoQ==
+olik@^0.1.48:
+  version "0.1.48"
+  resolved "https://registry.yarnpkg.com/olik/-/olik-0.1.48.tgz#31c8e4d07034fdf58e1478f506cc3912160aded4"
+  integrity sha512-rcZlYGiN1ebmNnG44JsZGBXAfXtYpKgtGi3o+KwgRL8kujmj44B/oVSCKLTHrxWTERk9SenR4mJXFCJe5ejapA==
 
 once@^1.3.0, once@^1.3.1, once@^1.4.0:
   version "1.4.0"
