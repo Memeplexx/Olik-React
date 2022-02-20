@@ -320,7 +320,7 @@ describe('React', () => {
     const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const future = select.test
-        .$replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' })
+        .$replace(() => new Promise(resolve => resolve('XXX')), { eager: 'ABC' })
         .$useFuture();
       return (
         <>
@@ -337,7 +337,7 @@ describe('React', () => {
     const select = createStore({ name: '', state: { test: '' } });
     const App = () => {
       const onClick = () => select.test
-        .$replace(() => new Promise(resolve => resolve('XXX')), { optimisticallyUpdateWith: 'ABC' });
+        .$replace(() => new Promise(resolve => resolve('XXX')), { eager: 'ABC' });
       const state = select.test.$useState();
       return (
         <>
