@@ -1,6 +1,6 @@
 {
   "name": "olik-react",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "main": "./dist/olik-react.umd.cjs",
   "module": "./dist/olik-react.js",
@@ -41,7 +41,7 @@
     "vitest": "^0.28.5"
   },
   "peerDependencies": {
-    "olik": "1.0.8"
+    "olik": "^1.0.8"
   },
   "description": "This is a simple utility package",
   "author": "<YOUR_NAME>",
