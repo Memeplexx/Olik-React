@@ -3,13 +3,17 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   augment,
+  createInnerStore,
   createStore,
   Derivation,
   Future,
   FutureState,
-  getInnerStores,
+  getStore,
+  MaxRecursionDepth,
   Readable,
-  Store,
+  UpdatableArray,
+  UpdatableObject,
+  UpdatablePrimitive
 } from 'olik';
 
 import React from 'react';
@@ -101,19 +105,26 @@ export const augmentOlikForReact = () => augment({
   }
 })
 
-export const useInnerStore = function <C extends object | number | string | boolean>(
-  {key, state}: {
-    state: C,
-    key: string,
-  },
-): {
-  store: Store<C>,
-  state: C,
-} {
-  const stateRef = React.useRef<C>(state);
-  const store: Store<C> = React.useMemo(() => getInnerStores().get(key) as undefined | Store<C> || createStore({ key: key, state: stateRef.current }) as Store<C>, [key]);
-  return {
-    state: store.$useState() as C,
-    store: store as Store<C>,
+type Store<S> = S extends never ? unknown : (S extends Array<unknown> ? UpdatableArray<S, 'isFilter', 'notQueried', MaxRecursionDepth> : S extends object ? UpdatableObject<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth> : UpdatablePrimitive<S, 'isFind', 'notArray', MaxRecursionDepth>);
+
+export const useNestedStore = <S extends Record<string, unknown>>(state: S) => ({
+  usingAccessor: <C extends Readable<unknown>>(accessor: (store: Store<S>) => C): {
+    store: C,
+    state: C['$state'],
+  } => {
+    const stateRef = React.useRef<S>(state);
+    const store = React.useMemo(() => createInnerStore(stateRef.current).usingAccessor(accessor), []);
+    return {
+      state: store.$useState(),
+      store: store,
+    }
   }
+})
+
+export const useGlobalStore = function <S extends Record<string, unknown>>(
+  state: S,
+): Store<S> {
+  const stateRef = React.useRef<S>(state);
+  return React.useMemo(() => getStore<S>() || createStore(stateRef.current) as Store<S>, []);
 }
+
