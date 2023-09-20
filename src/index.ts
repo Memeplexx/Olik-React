@@ -4,11 +4,9 @@
 import {
   augment,
   createInnerStore,
-  createStore,
   Derivation,
   Future,
   FutureState,
-  getStore,
   MaxRecursionDepth,
   Readable,
   UpdatableArray,
@@ -120,11 +118,3 @@ export const useNestedStore = <S extends Record<string, unknown>>(state: S) => (
     }
   }
 })
-
-export const useGlobalStore = function <S extends Record<string, unknown>>(
-  state: S,
-): Store<S> {
-  const stateRef = React.useRef<S>(state);
-  return React.useMemo(() => getStore<S>() || createStore(stateRef.current) as Store<S>, []);
-}
-
