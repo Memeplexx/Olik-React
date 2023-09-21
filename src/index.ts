@@ -14,20 +14,22 @@ import {
   UpdatablePrimitive
 } from 'olik';
 
-import React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 declare module 'olik' {
   interface Readable<S> {
     /**
      * Returns a hook which reads the selected node of the state tree
      */
-    $useState: (deps?: React.DependencyList) => S;
+    $useState: (debounce?: number) => S;
+
+    $useStateSync: () => S;
   }
   interface Derivation<R> {
     /**
      * Returns a hook which reads the state of a derivation
      */
-    $useState: (deps?: React.DependencyList) => R;
+    $useState: () => R;
   }
   interface Future<C> {
     /**
@@ -43,49 +45,63 @@ declare module 'olik' {
      * <div>Store value: {future.storeValue}</div>
      * <div>Error: {future.error}</div>
      */
-    $useFuture: (deps?: React.DependencyList) => FutureState<C>;
+    $useFuture: (debounce?: number) => FutureState<C>;
   }
 }
 
 export const augmentOlikForReact = () => augment({
   selection: {
     $useState: function <S>(input: Readable<S>) {
-      return function (deps: React.DependencyList = []) {
-        const inputRef = React.useRef(input);
-        const [value, setValue] = React.useState(inputRef.current.$state);
-        const depsString = JSON.stringify(deps);
-        React.useEffect(() => {
-          inputRef.current = input;
-          setValue(input.$state);
-          const subscription = inputRef.current.$onChange(arg => setValue(arg))
+      return function (debounce?: number) {
+        const inputRef = useRef(input);
+        const [value, setValue] = useState(inputRef.current.$state);
+        useEffect(() => {
+          let valueCalculated: boolean;
+          const subscription = inputRef.current.$onChange(arg => {
+            valueCalculated = false;
+            setTimeout(() => { // wait for all other change listeners to fire
+              if (valueCalculated) { return; }
+              valueCalculated = true;
+              setValue(arg);
+            }, debounce)
+          })
           return () => subscription.unsubscribe();
-        }, [depsString]);
+        }, [])
         return value;
       }
     },
+    $useStateSync: function <S>(input: Readable<S>) {
+      return function () {
+        const inputRef = useRef(input);
+        const [value, setValue] = useState(inputRef.current.$state);
+        useEffect(() => {
+          const subscription = inputRef.current.$onChange(arg => setValue(arg))
+          return () => subscription.unsubscribe();
+        }, [])
+        return value;
+      }
+    }
   },
   derivation: {
     $useState: function <C>(input: Derivation<C>) {
-      return function (deps: React.DependencyList = []) {
-        const inputRef = React.useRef(input);
-        const [value, setValue] = React.useState(inputRef.current.$state);
-        const depsString = JSON.stringify(deps);
-        React.useEffect(() => {
-          inputRef.current = input;
-          setValue(input.$state);
+      return function () {
+        const inputRef = useRef(input);
+        const [value, setValue] = useState(inputRef.current.$state);
+        // const debouncedValue = useDebounce(value, debounce);
+        useEffect(() => {
           const subscription = inputRef.current.$onChange(arg => setValue(arg))
           return () => subscription.unsubscribe();
-        }, [depsString]);
+        }, [])
         return value;
       }
     },
   },
   future: {
     $useFuture: function <C>(input: Future<C>) {
-      return function (deps: React.DependencyList = []) {
-        const [state, setState] = React.useState(input.state);
+      return function (deps) {
+        const [state, setState] = useState(input.state);
         const depsString = JSON.stringify(deps);
-        React.useEffect(() => {
+        useEffect(() => {
 
           // Call promise
           let running = true;
@@ -110,8 +126,8 @@ export const useNestedStore = <S extends Record<string, unknown>>(state: S) => (
     store: C,
     state: C['$state'],
   } => {
-    const stateRef = React.useRef<S>(state);
-    const store = React.useMemo(() => createInnerStore(stateRef.current).usingAccessor(accessor), []);
+    const stateRef = useRef<S>(state);
+    const store = useMemo(() => createInnerStore(stateRef.current).usingAccessor(accessor), []);
     return {
       state: store.$useState(),
       store: store,
