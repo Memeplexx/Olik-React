@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 // We are disabling the above rule because we can be sure that hooks are called in the correct
 // order due to the fact that the library functions will always be chained the same way
 import {
@@ -21,7 +20,7 @@ declare module 'olik' {
     /**
      * Returns a hook which reads the selected node of the state tree
      */
-    $useState: (debounce?: number) => S;
+    $useState: () => S;
   }
   interface Derivation<R> {
     /**
@@ -43,25 +42,25 @@ declare module 'olik' {
      * <div>Store value: {future.storeValue}</div>
      * <div>Error: {future.error}</div>
      */
-    $useFuture: (debounce?: number) => FutureState<C>;
+    $useFuture: () => FutureState<C>;
   }
 }
 
 export const augmentOlikForReact = () => augment({
   selection: {
     $useState: function <S>(input: Readable<S>) {
-      return function (debounce?: number) {
+      return function () {
         const inputRef = useRef(input);
         const [value, setValue] = useState(inputRef.current.$state);
         useEffect(() => {
           let valueCalculated: boolean;
           const subscription = inputRef.current.$onChange(arg => {
             valueCalculated = false;
-            setTimeout(() => { // wait for all other change listeners to fire
+            enqueueMicroTask(() => { // wait for all other change listeners to fire
               if (valueCalculated) { return; }
               valueCalculated = true;
               setValue(arg);
-            }, debounce)
+            })
           })
           return () => subscription.unsubscribe();
         }, [])
@@ -121,3 +120,7 @@ export const useNestedStore = <S extends Record<string, unknown>>(state: S) => (
     }
   }
 })
+
+export const enqueueMicroTask = (fn: () => void) => {
+  Promise.resolve().then(fn)
+}

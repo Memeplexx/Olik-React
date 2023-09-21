@@ -120,10 +120,10 @@ it('should create a component store without a parent', async () => {
   await screen.getByTestId<HTMLButtonElement>('btn-1').click();
   await new Promise(resolve => setTimeout(resolve));
   await expect(screen.getByTestId('result').textContent).toEqual('test');
-  expect(renderCount).toEqual(3);
+  expect(renderCount).toEqual(2);
   screen.getByTestId<HTMLButtonElement>('btn-2').click();
   await new Promise(resolve => setTimeout(resolve));
-  expect(renderCount).toEqual(4);
+  expect(renderCount).toEqual(3);
 });
 
 it('should create a component store with a parent', async () => {
@@ -155,7 +155,7 @@ it('should create a component store with a parent', async () => {
   await screen.getByTestId<HTMLButtonElement>('btn').click();
   await new Promise(resolve => setTimeout(resolve));
   expect(parentSelect.component.$state).toEqual({ prop: 'test' });
-  expect(renderCount).toEqual(3);
+  expect(renderCount).toEqual(2);
 });
 
 it('component store should receive props from parent', async () => {
@@ -253,7 +253,7 @@ it('should create a component store with a parent', async () => {
   expect(renderCount).toEqual(1);
   await screen.getByTestId<HTMLButtonElement>('btn').click();
   await new Promise(resolve => setTimeout(resolve));
-  expect(renderCount).toEqual(3);
+  expect(renderCount).toEqual(2);
   expect(parentSelect.thingy.$state).toEqual({ val: 'x' });
 });
 
