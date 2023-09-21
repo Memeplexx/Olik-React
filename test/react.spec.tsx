@@ -104,7 +104,7 @@ it('should useDerivation with deps', async () => {
 it('should create a component store without a parent', async () => {
   let renderCount = 0;
   const App = () => {
-    const { store, state } = useNestedStore({ unhosted: initialState }).usingAccessor(s => s.unhosted);
+    const { store } = useNestedStore({ unhosted: initialState }).usingAccessor(s => s.unhosted);
     const result = store.object.property.$useState();
     renderCount++;
     return (
@@ -133,7 +133,7 @@ it('should create a component store with a parent', async () => {
   });
   let renderCount = 0;
   const Child = () => {
-    const { store, state } = useNestedStore({ component: { prop: '' } }).usingAccessor(s => s.component);
+    const { store } = useNestedStore({ component: { prop: '' } }).usingAccessor(s => s.component);
     const result = store.prop.$useState();
     renderCount++;
     return (
@@ -164,7 +164,7 @@ it('component store should receive props from parent', async () => {
     component2: {} as { [key: string]: { prop: string, num: number } }
   });
   const Child: React.FunctionComponent<{ num: number }> = (props) => {
-    const { store, state } = useNestedStore({ component2: { prop: 0 } }).usingAccessor(s => s.component2);
+    const { store } = useNestedStore({ component2: { prop: 0 } }).usingAccessor(s => s.component2);
     React.useEffect(() => store.prop.$set(props.num), [props.num]);
     const result = store.prop.$useState();
     return (
