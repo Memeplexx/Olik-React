@@ -22,8 +22,6 @@ declare module 'olik' {
      * Returns a hook which reads the selected node of the state tree
      */
     $useState: (debounce?: number) => S;
-
-    $useStateSync: () => S;
   }
   interface Derivation<R> {
     /**
@@ -70,17 +68,6 @@ export const augmentOlikForReact = () => augment({
         return value;
       }
     },
-    $useStateSync: function <S>(input: Readable<S>) {
-      return function () {
-        const inputRef = useRef(input);
-        const [value, setValue] = useState(inputRef.current.$state);
-        useEffect(() => {
-          const subscription = inputRef.current.$onChange(arg => setValue(arg))
-          return () => subscription.unsubscribe();
-        }, [])
-        return value;
-      }
-    }
   },
   derivation: {
     $useState: function <C>(input: Derivation<C>) {

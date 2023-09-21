@@ -256,3 +256,22 @@ it('should create a component store with a parent', async () => {
   expect(renderCount).toEqual(3);
   expect(parentSelect.thingy.$state).toEqual({ val: 'x' });
 });
+
+it('', () => {
+  const store = createStore({
+    one: '',
+    two: 0,
+  });
+  const d1 = derive(
+    store.one,
+    store.two,
+  ).$with((one, two) => {
+    return one + two;
+  });
+  derive(
+    d1,
+    store.two
+  ).$with((d1, two) => {
+    return d1 + two;
+  })
+})
