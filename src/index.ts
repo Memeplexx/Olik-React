@@ -105,7 +105,7 @@ export const augmentOlikForReact = () => augment({
   }
 })
 
-type Store<S> = S extends never ? unknown : (S extends Array<unknown> ? UpdatableArray<S, 'isFilter', 'notQueried', MaxRecursionDepth> : S extends object ? UpdatableObject<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth> : UpdatablePrimitive<S, 'isFind', 'notArray', MaxRecursionDepth>);
+type Store<S> = S extends never ? unknown : (S extends Array<unknown> ? UpdatableArray<S, 'isFilter', 'notQueried', 'yes',  MaxRecursionDepth> : S extends object ? UpdatableObject<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth> : UpdatablePrimitive<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth>);
 
 export const useNestedStore = <S extends Record<string, unknown>>(state: S) => ({
   usingAccessor: <C extends Readable<unknown>>(accessor: (store: Store<S>) => C): {

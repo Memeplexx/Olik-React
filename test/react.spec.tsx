@@ -1,10 +1,12 @@
 // import '@testing-library/jest-dom';
 
 import { augmentOlikForReact, useNestedStore } from '../src';
-import { createStore, derive, importOlikAsyncModule, resetLibraryState } from 'olik';
+import { createStore, resetLibraryState } from 'olik';
+import { derive } from 'olik/derive';
 import { expect, beforeAll, it, afterEach, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { importOlikAsyncModule } from 'olik/async';
 
 const initialState = {
   object: { property: 'a' },
@@ -52,7 +54,7 @@ it('should useDerivation with no deps', async () => {
   const select = createStore(initialState);
   let calcCount = 0;
   const App = () => {
-    const result = derive(
+    const result = derive('c').$from(
       select.string,
       select.object.property,
     ).$with((str, prop) => {
@@ -80,7 +82,7 @@ it('should useDerivation with deps', async () => {
   let calcCount = 0;
   const App = () => {
     const [, setStr] = React.useState('');
-    const result = derive(
+    const result = derive('d').$from(
       get.string,
       get.object.property,
     ).$with((str, prop) => {
@@ -262,13 +264,13 @@ it('', () => {
     one: '',
     two: 0,
   });
-  const d1 = derive(
+  const d1 = derive('a').$from(
     store.one,
     store.two,
   ).$with((one, two) => {
     return one + two;
   });
-  derive(
+  derive('b').$from(
     d1,
     store.two
   ).$with((d1, two) => {
