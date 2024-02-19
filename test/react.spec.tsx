@@ -1,6 +1,6 @@
 // import '@testing-library/jest-dom';
 
-import { augmentOlikForReact, useNestedStore } from '../src';
+import { augmentOlikForReact } from '../src';
 import { createStore, resetLibraryState } from 'olik';
 import { derive } from 'olik/derive';
 import { expect, beforeAll, it, afterEach, beforeEach } from 'vitest';
@@ -103,91 +103,91 @@ it('should useDerivation with deps', async () => {
   await expect(calcCount).toEqual(1);
 });
 
-it('should create a component store without a parent', async () => {
-  let renderCount = 0;
-  const App = () => {
-    const { store } = useNestedStore({ unhosted: initialState }).usingAccessor(s => s.unhosted);
-    const result = store.object.property.$useState();
-    renderCount++;
-    return (
-      <>
-        <button data-testid="btn-1" onClick={() => store.object.property.$set('test')}>Click</button>
-        <button data-testid="btn-2" onClick={() => store.string.$set('test')}>Click</button>
-        <div data-testid="result">{result}</div>
-      </>
-    );
-  };
-  render(<App />);
-  expect(renderCount).toEqual(1);
-  await screen.getByTestId<HTMLButtonElement>('btn-1').click();
-  await new Promise(resolve => setTimeout(resolve));
-  await expect(screen.getByTestId('result').textContent).toEqual('test');
-  expect(renderCount).toEqual(2);
-  screen.getByTestId<HTMLButtonElement>('btn-2').click();
-  await new Promise(resolve => setTimeout(resolve));
-  expect(renderCount).toEqual(3);
-});
+// it('should create a component store without a parent', async () => {
+//   let renderCount = 0;
+//   const App = () => {
+//     const { store } = useNestedStore({ unhosted: initialState }).usingAccessor(s => s.unhosted);
+//     const result = store.object.property.$useState();
+//     renderCount++;
+//     return (
+//       <>
+//         <button data-testid="btn-1" onClick={() => store.object.property.$set('test')}>Click</button>
+//         <button data-testid="btn-2" onClick={() => store.string.$set('test')}>Click</button>
+//         <div data-testid="result">{result}</div>
+//       </>
+//     );
+//   };
+//   render(<App />);
+//   expect(renderCount).toEqual(1);
+//   await screen.getByTestId<HTMLButtonElement>('btn-1').click();
+//   await new Promise(resolve => setTimeout(resolve));
+//   await expect(screen.getByTestId('result').textContent).toEqual('test');
+//   expect(renderCount).toEqual(2);
+//   screen.getByTestId<HTMLButtonElement>('btn-2').click();
+//   await new Promise(resolve => setTimeout(resolve));
+//   expect(renderCount).toEqual(3);
+// });
 
-it('should create a component store with a parent', async () => {
-  const parentSelect = createStore({
-    ...initialState,
-    component: {} as { [key: string]: { prop: string } }
-  });
-  let renderCount = 0;
-  const Child = () => {
-    const { store } = useNestedStore({ component: { prop: '' } }).usingAccessor(s => s.component);
-    const result = store.prop.$useState();
-    renderCount++;
-    return (
-      <>
-        <button data-testid="btn" onClick={() => store.prop.$set('test')}>Click</button>
-        <div>{result}</div>
-      </>
-    );
-  };
-  const Parent = () => {
-    return (
-      <>
-        <Child />
-      </>
-    );
-  }
-  render(<Parent />);
-  expect(renderCount).toEqual(1);
-  await screen.getByTestId<HTMLButtonElement>('btn').click();
-  await new Promise(resolve => setTimeout(resolve));
-  expect(parentSelect.component.$state).toEqual({ prop: 'test' });
-  expect(renderCount).toEqual(2);
-});
+// it('should create a component store with a parent', async () => {
+//   const parentSelect = createStore({
+//     ...initialState,
+//     component: {} as { [key: string]: { prop: string } }
+//   });
+//   let renderCount = 0;
+//   const Child = () => {
+//     const { store } = useNestedStore({ component: { prop: '' } }).usingAccessor(s => s.component);
+//     const result = store.prop.$useState();
+//     renderCount++;
+//     return (
+//       <>
+//         <button data-testid="btn" onClick={() => store.prop.$set('test')}>Click</button>
+//         <div>{result}</div>
+//       </>
+//     );
+//   };
+//   const Parent = () => {
+//     return (
+//       <>
+//         <Child />
+//       </>
+//     );
+//   }
+//   render(<Parent />);
+//   expect(renderCount).toEqual(1);
+//   await screen.getByTestId<HTMLButtonElement>('btn').click();
+//   await new Promise(resolve => setTimeout(resolve));
+//   expect(parentSelect.component.$state).toEqual({ prop: 'test' });
+//   expect(renderCount).toEqual(2);
+// });
 
-it('component store should receive props from parent', async () => {
-  const parentSelect = createStore({
-    ...initialState,
-    component2: {} as { [key: string]: { prop: string, num: number } }
-  });
-  const Child: React.FunctionComponent<{ num: number }> = (props) => {
-    const { store } = useNestedStore({ component2: { prop: 0 } }).usingAccessor(s => s.component2);
-    React.useEffect(() => store.prop.$set(props.num), [props.num]);
-    const result = store.prop.$useState();
-    return (
-      <>
-        <div>{result}</div>
-      </>
-    );
-  };
-  const Parent = () => {
-    const [num, setNum] = React.useState(0);
-    return (
-      <>
-        <Child num={num} />
-        <button data-testid="btn" onClick={() => setNum(num + 1)}>Click</button>
-      </>
-    );
-  }
-  render(<Parent />);
-  screen.getByTestId<HTMLButtonElement>('btn').click();
-  await waitFor(() => expect(parentSelect.component2.$state).toEqual({ prop: 1 }));
-})
+// it('component store should receive props from parent', async () => {
+//   const parentSelect = createStore({
+//     ...initialState,
+//     component2: {} as { [key: string]: { prop: string, num: number } }
+//   });
+//   const Child: React.FunctionComponent<{ num: number }> = (props) => {
+//     const { store } = useNestedStore({ component2: { prop: 0 } }).usingAccessor(s => s.component2);
+//     React.useEffect(() => store.prop.$set(props.num), [props.num]);
+//     const result = store.prop.$useState();
+//     return (
+//       <>
+//         <div>{result}</div>
+//       </>
+//     );
+//   };
+//   const Parent = () => {
+//     const [num, setNum] = React.useState(0);
+//     return (
+//       <>
+//         <Child num={num} />
+//         <button data-testid="btn" onClick={() => setNum(num + 1)}>Click</button>
+//       </>
+//     );
+//   }
+//   render(<Parent />);
+//   screen.getByTestId<HTMLButtonElement>('btn').click();
+//   await waitFor(() => expect(parentSelect.component2.$state).toEqual({ prop: 1 }));
+// })
 
 it('should respond to async actions', async () => {
   const select = createStore(initialState);
@@ -225,39 +225,39 @@ it('should respond to async actions', async () => {
 //   await waitFor(() => expect(screen.getByTestId('res').textContent).toEqual('XXX'));
 // })
 
-it('should create a component store with a parent', async () => {
-  const parentSelect = createStore({
-    ...initialState,
-    thingy: {
-      val: ''
-    }
-  });
-  let renderCount = 0;
-  const Child = () => {
-    const { store } = useNestedStore({ thingy: { val: '' } }).usingAccessor(s => s.thingy);
-    const result = store.val.$useState();
-    renderCount++;
-    return (
-      <>
-        <button data-testid="btn" onClick={() => store.val.$set('x')}>Click</button>
-        <div>{result}</div>
-      </>
-    );
-  };
-  const Parent = () => {
-    return (
-      <>
-        <Child />
-      </>
-    );
-  }
-  render(<Parent />);
-  expect(renderCount).toEqual(1);
-  await screen.getByTestId<HTMLButtonElement>('btn').click();
-  await new Promise(resolve => setTimeout(resolve));
-  expect(renderCount).toEqual(2);
-  expect(parentSelect.thingy.$state).toEqual({ val: 'x' });
-});
+// it('should create a component store with a parent', async () => {
+//   const parentSelect = createStore({
+//     ...initialState,
+//     thingy: {
+//       val: ''
+//     }
+//   });
+//   let renderCount = 0;
+//   const Child = () => {
+//     const { store } = useNestedStore({ thingy: { val: '' } }).usingAccessor(s => s.thingy);
+//     const result = store.val.$useState();
+//     renderCount++;
+//     return (
+//       <>
+//         <button data-testid="btn" onClick={() => store.val.$set('x')}>Click</button>
+//         <div>{result}</div>
+//       </>
+//     );
+//   };
+//   const Parent = () => {
+//     return (
+//       <>
+//         <Child />
+//       </>
+//     );
+//   }
+//   render(<Parent />);
+//   expect(renderCount).toEqual(1);
+//   await screen.getByTestId<HTMLButtonElement>('btn').click();
+//   await new Promise(resolve => setTimeout(resolve));
+//   expect(renderCount).toEqual(2);
+//   expect(parentSelect.thingy.$state).toEqual({ val: 'x' });
+// });
 
 it('', () => {
   const store = createStore({

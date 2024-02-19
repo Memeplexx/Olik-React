@@ -2,18 +2,14 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   augment,
-  createInnerStore,
   Derivation,
   Future,
   FutureState,
-  MaxRecursionDepth,
   Readable,
-  UpdatableArray,
-  UpdatableObject,
-  UpdatablePrimitive
+  Store
 } from 'olik';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 declare module 'olik' {
   interface Readable<S> {
@@ -105,22 +101,25 @@ export const augmentOlikForReact = () => augment({
   }
 })
 
-type Store<S> = S extends never ? unknown : (S extends Array<unknown> ? UpdatableArray<S, 'isFilter', 'notQueried', 'yes',  MaxRecursionDepth> : S extends object ? UpdatableObject<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth> : UpdatablePrimitive<S, 'isFind', 'notArray', 'yes', MaxRecursionDepth>);
-
-export const useNestedStore = <S extends Record<string, unknown>>(state: S) => ({
-  usingAccessor: <C extends Readable<unknown>>(accessor: (store: Store<S>) => C): {
-    store: C,
-    state: C['$state'],
-  } => {
-    const stateRef = useRef<S>(state);
-    const store = useMemo(() => createInnerStore(stateRef.current).usingAccessor(accessor), []);
-    return {
-      state: store.$useState(),
-      store: store,
-    }
-  }
-})
-
 export const enqueueMicroTask = (fn: () => void) => {
   Promise.resolve().then(fn)
+}
+
+export const createUseStoreHook = <S extends Record<string, unknown>>(context: Context<Store<S> | undefined>) => {
+  return <Patch extends Record<string, unknown>>(patch?: Patch) => {
+    type StateType = Patch extends undefined ? S : S & Patch;
+    const store = useContext(context)! as Store<S> & S;
+    useMemo(function createSubStore() {
+      if (!patch) { return; }
+      // prevent react.strictmode from setting state twice
+      if (Object.keys(patch).every(key => (store.$state as Record<string, unknown>)[key] !== undefined)) { return; }
+      store.$setNew(patch);
+    }, [patch, store]);
+    return new Proxy({} as { store: Store<StateType> } & { [key in keyof StateType]: (StateType)[key] }, {
+      get(target, p) {
+        if (p === 'store') { return store; }
+        return store[p as (keyof S)].$useState();
+      },
+    });
+  }
 }
