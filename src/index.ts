@@ -2,11 +2,12 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   augment,
+  DeepReadonly,
   Derivation,
   Future,
   FutureState,
   Readable,
-  Store
+  Store,
 } from 'olik';
 
 import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -110,14 +111,17 @@ export const createUseStoreHook = <S extends Record<string, unknown>>(context: C
     type StateType = Patch extends undefined ? S : S & Patch;
     const store = useContext(context)! as Store<S> & S;
     useMemo(function createSubStore() {
-      if (!patch) { return; }
+      if (!patch)
+        return;
       // prevent react.strictmode from setting state twice
-      if (Object.keys(patch).every(key => (store.$state as Record<string, unknown>)[key] !== undefined)) { return; }
+      if (Object.keys(patch).every(key => (store.$state as Record<string, unknown>)[key] !== undefined))
+        return;
       store.$setNew(patch);
     }, [patch, store]);
-    return new Proxy({} as { store: Store<StateType> } & { [key in keyof StateType]: (StateType)[key] }, {
+    return new Proxy({} as { store: Store<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>, {
       get(target, p) {
-        if (p === 'store') { return store; }
+        if (p === 'store')
+          return store;
         return store[p as (keyof S)].$useState();
       },
     });
