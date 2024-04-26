@@ -7,7 +7,8 @@ import {
   Future,
   FutureState,
   Readable,
-  Store,
+  StoreDef,
+  ValidJsonObject,
 } from 'olik';
 
 import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -106,23 +107,26 @@ export const enqueueMicroTask = (fn: () => void) => {
   Promise.resolve().then(fn)
 }
 
-export const createUseStoreHook = <S extends Record<string, unknown>>(context: Context<Store<S> | undefined>) => {
-  return <Patch extends Record<string, unknown>>(patch?: Patch) => {
+
+export type ReactStoreDef<StateType extends ValidJsonObject> = { store: StoreDef<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>;
+
+export const createUseStoreHook = <S extends ValidJsonObject>(context: Context<StoreDef<S> | undefined>) => {
+  return <Patch extends ValidJsonObject>(patch?: Patch) => {
     type StateType = Patch extends undefined ? S : S & Patch;
-    const store = useContext(context)! as Store<S> & S;
-    useMemo(function createSubStore() {
+    const store = useContext(context)! as unknown as { $state: S, $setNew: (patch: Patch) => void } & { [key: string]: { $useState: () => unknown } };
+    void useMemo(function createSubStore() {
       if (!patch)
         return;
       // prevent react.strictmode from setting state twice
-      if (Object.keys(patch).every(key => (store.$state as Record<string, unknown>)[key] !== undefined))
+      if (Object.keys(patch).every(key => store.$state[key] !== undefined))
         return;
       store.$setNew(patch);
     }, [patch, store]);
-    return new Proxy({} as { store: Store<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>, {
+    return new Proxy({} as ReactStoreDef<StateType>, {
       get(target, p) {
         if (p === 'store')
           return store;
-        return store[p as (keyof S)].$useState();
+        return store[p as string].$useState();
       },
     });
   }

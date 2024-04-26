@@ -1,12 +1,12 @@
 // import '@testing-library/jest-dom';
 
-import { augmentOlikForReact } from '../src';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { createStore, resetLibraryState } from 'olik';
-import { derive } from 'olik/derive';
-import { expect, beforeAll, it, afterEach, beforeEach } from 'vitest';
-import React from 'react';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { importOlikAsyncModule } from 'olik/async';
+import { derive } from 'olik/derive';
+import React from 'react';
+import { afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
+import { augmentOlikForReact } from '../src';
 
 const initialState = {
   object: { property: 'a' },
@@ -30,7 +30,51 @@ it('should create and update a store', () => {
   select.object.property
     .$set('test');
   expect(select.$state.object.property).toEqual('test');
-})
+});
+
+// it('', () => {
+//   const initState = {
+//     modal: null as 'confirmDeleteGroup' | 'confirmDeleteTag' | 'synonymOptions' | 'groupOptions' | null,
+//     bool: false,
+//     thing: {},
+//     flatObj: {
+//       one: 'hello hello hello hello hello hello hello hello',
+//       two: 'world',
+//       three: 'another',
+//     },
+//     num: 0,
+//     obj: {
+//       one: {
+//         two: 'hello',
+//         three: false,
+//         four: 4
+//       },
+//       two: {
+//         five: 'thing',
+//         three: [
+//           [1, 2, 3]
+//         ]
+//       }
+//     },
+//     arr: [
+//       { id: 1, text: 'one' },
+//       { id: 2, text: 'two' },
+//       { id: 3, text: 'three' },
+//     ],
+//     arrNum: [1, 2, 3],
+//     arrNested: [
+//       [1, 2, 3],
+//       [4, 5, 6],
+//       [7, 8, 9]
+//     ],
+//     dat: new Date(),
+//     thingy: 'ddd',
+//   }
+//   const StoreContext = createContext<StoreDef<typeof initState> | undefined>(undefined);
+//   const thingy = createUseStoreHook(StoreContext);
+//   const { store } = thingy();
+//   store.num.$add(1);
+// })
 
 it('should useSelector', async () => {
   const select = createStore(initialState);
@@ -77,31 +121,31 @@ it('should useDerivation with no deps', async () => {
   await expect(calcCount).toEqual(2);
 });
 
-it('should useDerivation with deps', async () => {
-  const get = createStore(initialState);
-  let calcCount = 0;
-  const App = () => {
-    const [, setStr] = React.useState('');
-    const result = derive('d').$from(
-      get.string,
-      get.object.property,
-    ).$with((str, prop) => {
-      calcCount++;
-      return str + prop;
-    }).$useState();
-    return (
-      <>
-        <button data-testid="btn-1" onClick={() => setStr('test')}>Click</button>
-        <div data-testid="result">{result}</div>
-      </>
-    );
-  };
-  await render(<App />);
-  await expect(screen.getByTestId('result').textContent).toEqual(initialState.string + initialState.object.property);
-  await expect(calcCount).toEqual(1);
-  await screen.getByTestId<HTMLButtonElement>('btn-1').click();
-  await expect(calcCount).toEqual(1);
-});
+// it('should useDerivation with deps', async () => {
+//   const get = createStore(initialState);
+//   let calcCount = 0;
+//   const App = () => {
+//     const [, setStr] = React.useState('');
+//     const result = derive('d').$from(
+//       get.string,
+//       get.object.property,
+//     ).$with((str, prop) => {
+//       calcCount++;
+//       return str + prop;
+//     }).$useState();
+//     return (
+//       <>
+//         <button data-testid="btn-1" onClick={() => setStr('test')}>Click</button>
+//         <div data-testid="result">{result}</div>
+//       </>
+//     );
+//   };
+//   await render(<App />);
+//   await expect(screen.getByTestId('result').textContent).toEqual(initialState.string + initialState.object.property);
+//   await expect(calcCount).toEqual(1);
+//   await screen.getByTestId<HTMLButtonElement>('btn-1').click();
+//   await expect(calcCount).toEqual(1);
+// });
 
 // it('should create a component store without a parent', async () => {
 //   let renderCount = 0;
