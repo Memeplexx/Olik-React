@@ -2,13 +2,13 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   augment,
+  BasicRecord,
   DeepReadonly,
   Derivation,
   Future,
   FutureState,
   Readable,
   StoreDef,
-  ValidJsonObject,
 } from 'olik';
 
 import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -108,10 +108,10 @@ export const enqueueMicroTask = (fn: () => void) => {
 }
 
 
-export type ReactStoreDef<StateType extends ValidJsonObject> = { store: StoreDef<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>;
+export type ReactStoreDef<StateType extends BasicRecord> = { store: StoreDef<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>;
 
-export const createUseStoreHook = <S extends ValidJsonObject>(context: Context<StoreDef<S> | undefined>) => {
-  return <Patch extends ValidJsonObject>(patch?: Patch) => {
+export const createUseStoreHook = <S extends BasicRecord>(context: Context<StoreDef<S> | undefined>) => {
+  return <Patch extends BasicRecord>(patch?: Patch) => {
     type StateType = Patch extends undefined ? S : S & Patch;
     const store = useContext(context)! as unknown as { $state: S, $setNew: (patch: Patch) => void } & { [key: string]: { $useState: () => unknown } };
     void useMemo(function createSubStore() {
