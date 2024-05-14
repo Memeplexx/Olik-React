@@ -2,11 +2,11 @@
 
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { createStore, resetLibraryState } from 'olik';
-import { importOlikAsyncModule } from 'olik/async';
+import { configureAsyncModule } from 'olik/async';
 import { derive } from 'olik/derive';
 import React from 'react';
 import { afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
-import { augmentOlikForReact } from '../src';
+import { augmentForReact } from '../src';
 
 const initialState = {
   object: { property: 'a' },
@@ -15,8 +15,8 @@ const initialState = {
 };
 
 beforeAll(() => {
-  augmentOlikForReact();
-  importOlikAsyncModule();
+  augmentForReact();
+  configureAsyncModule();
 })
 
 beforeEach(() => {

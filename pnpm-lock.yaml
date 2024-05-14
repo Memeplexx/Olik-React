@@ -44,8 +44,8 @@ devDependencies:
     specifier: ^22.1.0
     version: 22.1.0
   olik:
-    specifier: 1.0.53
-    version: 1.0.53
+    specifier: 1.0.104
+    version: 1.0.104
   react:
     specifier: ^18.2.0
     version: 18.2.0
@@ -3556,8 +3556,8 @@ packages:
       object-keys: 1.1.1
     dev: true
 
-  /olik@1.0.53:
-    resolution: {integrity: sha512-gZyyVeLao2yjsYJc6er9X0S+qSJkbdeO+o1HEBbBsxYibTQ3uJJcsvavXJDA/bGjeRcjPSEzWzogmkeqFSV4qA==}
+  /olik@1.0.104:
+    resolution: {integrity: sha512-Gh4e73kEpF/jKzsWx6ssMTNvxz+Wpq8r6ChdV85T26d+vkQ954aFRm0PcmPo26EWpW9Mo9+eaS4QuN9o+RoJxw==}
     dev: true
 
   /once@1.4.0:

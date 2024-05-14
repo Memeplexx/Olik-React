@@ -8,6 +8,7 @@ import {
   Future,
   FutureState,
   Readable,
+  SetNewNode,
   StoreDef,
 } from 'olik';
 
@@ -44,7 +45,7 @@ declare module 'olik' {
   }
 }
 
-export const augmentOlikForReact = () => augment({
+export const augmentForReact = () => augment({
   selection: {
     $useState: function <S>(input: Readable<S>) {
       return function () {
@@ -71,7 +72,6 @@ export const augmentOlikForReact = () => augment({
       return function () {
         const inputRef = useRef(input);
         const [value, setValue] = useState(inputRef.current.$state);
-        // const debouncedValue = useDebounce(value, debounce);
         useEffect(() => {
           const subscription = inputRef.current.$onChange(arg => setValue(arg))
           return () => subscription.unsubscribe();
@@ -103,30 +103,37 @@ export const augmentOlikForReact = () => augment({
   }
 })
 
-export const enqueueMicroTask = (fn: () => void) => {
-  Promise.resolve().then(fn)
-}
+export const enqueueMicroTask = (fn: () => void) => Promise.resolve().then(fn);
 
 
-export type ReactStoreDef<StateType extends BasicRecord> = { store: StoreDef<StateType> } & DeepReadonly<{ [key in keyof StateType]: (StateType)[key] }>;
+export type ReactStoreDef<State extends BasicRecord, Patch extends { key: string, value: BasicRecord }> = {
+  store: StoreDef<State & { [key in Patch['key']]: Patch['value'] }>,
+  localStore: StoreDef<Patch['value']>,
+  localState: Patch['value'],
+} & DeepReadonly<{ [key in keyof State]: State[key] }>;
 
 export const createUseStoreHook = <S extends BasicRecord>(context: Context<StoreDef<S> | undefined>) => {
-  return <Patch extends BasicRecord>(patch?: Patch) => {
-    type StateType = Patch extends undefined ? S : S & Patch;
+  return <Key extends string, Patch extends { key: Key, value: BasicRecord }>(patch?: Patch) => {
     const store = useContext(context)! as unknown as { $state: S, $setNew: (patch: Patch) => void } & { [key: string]: { $useState: () => unknown } };
     void useMemo(function createSubStore() {
       if (!patch)
         return;
       // prevent react.strictmode from setting state twice
-      if (Object.keys(patch).every(key => store.$state[key] !== undefined))
+      if (store.$state[patch.key] !== undefined)
         return;
-      store.$setNew(patch);
+      (store[patch.key] as unknown as SetNewNode).$setNew(patch.value);
     }, [patch, store]);
-    return new Proxy({} as ReactStoreDef<StateType>, {
-      get(target, p) {
+    return new Proxy({} as ReactStoreDef<S, Patch>, {
+      get(_, p) {
         if (p === 'store')
           return store;
-        return store[p as string].$useState();
+        if (patch) {
+          if (p === 'localStore')
+            return store[patch.key];
+          if (p === 'localState')
+            return store[patch.key].$useState();
+        }
+        return store[p as string]!.$useState();
       },
     });
   }
