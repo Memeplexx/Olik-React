@@ -9,7 +9,7 @@ import {
   FutureState,
   Readable,
   SetNewNode,
-  StoreDef,
+  StoreDef
 } from 'olik';
 
 import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -105,36 +105,58 @@ export const augmentForReact = () => augment({
 
 export const enqueueMicroTask = (fn: () => void) => Promise.resolve().then(fn);
 
-
-export type ReactStoreDef<State extends BasicRecord, Patch extends { key: string, value: BasicRecord }> = {
-  store: StoreDef<State & { [key in Patch['key']]: Patch['value'] }>,
-  localStore: StoreDef<Patch['value']>,
-  localState: Patch['value'],
-} & DeepReadonly<{ [key in keyof State]: State[key] }>;
+export type ReactStoreLocal<S, Key extends string, Patch> = Omit<StoreDef<S & { $local: Patch }>, '$state'> & { $state: DeepReadonly<S & { [k in Key]: Patch }> };
+export type CreateUseStoreHookLocal<S, Key extends string, Patch> = { store: ReactStoreLocal<S, Key, Patch>, state: DeepReadonly<S & { $local: Patch }> };
+export type CreateUseStoreHookGlobal<S> = { store: StoreDef<S>, state: DeepReadonly<S> };
 
 export const createUseStoreHook = <S extends BasicRecord>(context: Context<StoreDef<S> | undefined>) => {
-  return <Key extends string, Patch extends { key: Key, value: BasicRecord }>(patch?: Patch) => {
-    const store = useContext(context)! as unknown as { $state: S, $setNew: (patch: Patch) => void } & { [key: string]: { $useState: () => unknown } };
-    void useMemo(function createSubStore() {
-      if (!patch)
-        return;
-      // prevent react.strictmode from setting state twice
-      if (store.$state[patch.key] !== undefined)
-        return;
-      (store[patch.key] as unknown as SetNewNode).$setNew(patch.value);
-    }, [patch, store]);
-    return new Proxy({} as ReactStoreDef<S, Patch>, {
-      get(_, p) {
-        if (p === 'store')
-          return store;
-        if (patch) {
-          if (p === 'localStore')
-            return store[patch.key];
-          if (p === 'localState')
-            return store[patch.key].$useState();
+  
+  function useStore(): CreateUseStoreHookGlobal<S>
+  function useStore<Key extends string, Patch extends BasicRecord>(key: Key, state: Patch): CreateUseStoreHookLocal<S, Key, Patch>
+  function useStore<Key extends string, Patch extends BasicRecord>(key?: Key, state?: Patch): CreateUseStoreHookGlobal<S> | CreateUseStoreHookLocal<S, Key, Patch> {
+
+    // get store context and create refs
+    const store = useContext(context)!;
+    const refs = useRef({ store, key, state, subStore: undefined as CreateUseStoreHookLocal<S, Key, Patch> | undefined });
+
+    // create substore as required
+    if (key && state && store.$state[key] === undefined)
+      (store[key] as SetNewNode).$setNew(refs.current.state as Patch);
+
+    const storeProxy = useMemo(() => new Proxy({}, {
+      get(_, p: string) {
+        if (p === '$local') {
+          if (refs.current.subStore === undefined)
+            refs.current.subStore = store[key!] as unknown as CreateUseStoreHookLocal<S, Key, Patch>;
+          return refs.current.subStore;
         }
-        return store[p as string]!.$useState();
+        return store[p];
+      }
+    }), [store, key]);
+
+    const stateProxy = useMemo(() => new Proxy({}, {
+      get(_, p: string) {
+        if (p === '$local')
+          return store[key!]!.$useState();
+        return store[p]!.$useState();
+      }
+    }), [store, key]);
+
+    return new Proxy({} as CreateUseStoreHookLocal<S, Key, Patch>, {
+      get(_, p: string) {
+        if (p === 'state')
+          return stateProxy;
+        if (p === 'store')
+          return storeProxy;
+        throw new Error(`Property ${p} does not exist on store`);
       },
     });
   }
+  return useStore;
 }
+
+// const appStore = createStore({ one: '' });
+// const storeContext = createContext(appStore);
+// const useStore = createUseStoreHook(storeContext);
+// const { store, state } = useStore('two', { child: 'val' });
+// console.log(store.$state.$local);
