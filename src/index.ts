@@ -5,10 +5,8 @@ import {
   BasicRecord,
   DeepReadonly,
   Derivation,
-  Future,
-  FutureState,
   Readable,
-  StoreDef
+  Store,
 } from 'olik';
 
 import { Context, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,22 +23,6 @@ declare module 'olik' {
      * Returns a hook which reads the state of a derivation
      */
     $useState: () => R;
-  }
-  interface Future<C> {
-    /**
-     * Returns a hook which tracks the status of the promise which is being used to update the state
-     * @example
-     * const future = select(s => s.some.value)
-     *   .replace(() => fetchValue())
-     *   .useFuture();
-     * 
-     * <div>Is loading: {future.isLoading}</div>
-     * <div>Was resolved: {future.wasResolved}</div>
-     * <div>Was rejected: {future.wasRejected}</div>
-     * <div>Store value: {future.storeValue}</div>
-     * <div>Error: {future.error}</div>
-     */
-    $useFuture: () => FutureState<C>;
   }
 }
 
@@ -79,35 +61,14 @@ export const augmentForReact = () => augment({
       }
     },
   },
-  future: {
-    $useFuture: function <C>(input: Future<C>) {
-      return function (deps) {
-        const [state, setState] = useState(input.state);
-        const depsString = JSON.stringify(deps);
-        useEffect(() => {
-
-          // Call promise
-          let running = true;
-          input
-            .then(() => { if (running) { setState(input.state); } })
-            .catch(() => { if (running) { setState(input.state); } });
-
-          // update state because there may have been an optimistic update
-          setState(input.state);
-          return () => { running = false; }
-        }, [depsString]);
-        return state;
-      }
-    }
-  }
 })
 
 export const enqueueMicroTask = (fn: () => void) => Promise.resolve().then(fn);
 
-export type CreateUseStoreHookLocal<S> = { local: StoreDef<S>, state: DeepReadonly<S> };
-export type CreateUseStoreHookGlobal<S> = { store: StoreDef<S>, state: DeepReadonly<S> };
+export type CreateUseStoreHookLocal<S> = { local: Store<S>, state: DeepReadonly<S> };
+export type CreateUseStoreHookGlobal<S> = { store: Store<S>, state: DeepReadonly<S> };
 
-export const createUseStoreHook = <S extends BasicRecord>(context: Context<StoreDef<S> | undefined>) => {
+export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store<S> | undefined>) => {
 
   return {
     useStore: () => {
