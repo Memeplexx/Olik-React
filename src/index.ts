@@ -103,26 +103,32 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
         },
       }), [stateProxy, store]);
     },
-    useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
+    useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch, deleteAfterDone = false) => {
       // get store context and create refs
       const store = useContext(context)!;
       const refs = useRef({ store, key, state, subStore: undefined as CreateUseStoreHookLocal<Patch> | undefined });
-      const keys = useMemo(() => new Set<string>(), []);
-
-      // create substore if needed
-      if (!store.$state[key])
-        (store[key]! as SetNewNode).$setNew(refs.current.state);
 
       // ensure that store changes result in rerender
       const [, setN] = useState(0);
       useEffect(() => {
-        const unsubscribe = store[key]?.$onChange(() => setN(nn => nn + 1));
-        return () => unsubscribe();
-      }, [key, keys, store]);
+        return store[key]?.$onChange(() => setN(nn => nn + 1));
+      }, [key, store]);
 
+      // create a memo of the store, and set the new state if it doesn't exist
       const storeMemo = useMemo(() => {
+        if (!store.$state[key])
+          (store[key]! as SetNewNode).$setNew(refs.current.state);
         return store[key!]!;
       }, [key, store]);
+
+      // destroy store as required. Note that local state will need to be set in order to not throw an error in strict mode
+      useEffect(() => {
+        if (!deleteAfterDone)
+          return;
+        if (!store.$state[key])
+          (store[key]! as SetNewNode).$setNew(refs.current.state);
+        return () => store[key].$delete()
+      }, [key, store, deleteAfterDone])
 
       return useMemo(() => new Proxy({} as CreateUseStoreHookLocal<Patch>, {
         get(_, p: string) {
@@ -136,7 +142,6 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
     }
   };
 }
-
 // const appStore = createStore({ one: '' });
 // const storeContext = createContext(appStore);
 // const useStore = createUseStoreHook(storeContext);
