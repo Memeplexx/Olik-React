@@ -6,6 +6,7 @@ import {
   DeepReadonly,
   Derivation,
   Readable,
+  SetNewNode,
   Store,
 } from 'olik';
 
@@ -34,7 +35,7 @@ export const augmentForReact = () => augment({
         const [value, setValue] = useState(inputRef.current.$state);
         useEffect(() => {
           // let valueCalculated: boolean;
-          const subscription = inputRef.current.$onChange(arg => {
+          const unsubscribe = inputRef.current.$onChange(arg => {
             // valueCalculated = false;
             // enqueueMicroTask(() => { // wait for all other change listeners to fire
               // if (valueCalculated) { return; }
@@ -42,7 +43,7 @@ export const augmentForReact = () => augment({
               setValue(arg);
             // })
           })
-          return () => subscription.unsubscribe();
+          return () => unsubscribe();
         }, [])
         return value;
       }
@@ -54,8 +55,7 @@ export const augmentForReact = () => augment({
         const inputRef = useRef(input);
         const [value, setValue] = useState(inputRef.current.$state);
         useEffect(() => {
-          const subscription = inputRef.current.$onChange(arg => setValue(arg))
-          return () => subscription.unsubscribe();
+          return inputRef.current.$onChange(arg => setValue(arg))
         }, [])
         return value;
       }
@@ -83,7 +83,7 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
         const rootSubStores = [...keys].map(k => store[k]);
         const subStores = rootSubStores;
         const listeners = subStores.map(subStore => subStore!.$onChange(() => setN(nn => nn + 1)));
-        return () => listeners.forEach(l => l.unsubscribe());
+        return () => listeners.forEach(unsubscribe => unsubscribe());
       }, [keys, store]);
 
       const stateProxy = useMemo(() => new Proxy({}, {
@@ -111,13 +111,13 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
 
       // create substore if needed
       if (!store.$state[key])
-        store[key]!.$setNew(refs.current.state);
+        (store[key]! as SetNewNode).$setNew(refs.current.state);
 
       // ensure that store changes result in rerender
       const [, setN] = useState(0);
       useEffect(() => {
-        const listener = store[key]?.$onChange(() => setN(nn => nn + 1));
-        return () => listener?.unsubscribe();
+        const unsubscribe = store[key]?.$onChange(() => setN(nn => nn + 1));
+        return () => unsubscribe();
       }, [key, keys, store]);
 
       const storeMemo = useMemo(() => {
