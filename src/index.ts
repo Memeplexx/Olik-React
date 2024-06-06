@@ -34,16 +34,15 @@ export const augmentForReact = () => augment({
         const inputRef = useRef(input);
         const [value, setValue] = useState(inputRef.current.$state);
         useEffect(() => {
-          // let valueCalculated: boolean;
-          const unsubscribe = inputRef.current.$onChange(arg => {
-            // valueCalculated = false;
-            // enqueueMicroTask(() => { // wait for all other change listeners to fire
-              // if (valueCalculated) { return; }
-              // valueCalculated = true;
+          let valueCalculated: boolean;
+          return inputRef.current.$onChange(arg => {
+            valueCalculated = false;
+            Promise.resolve().then(() => { // wait for all other change listeners to fire
+              if (valueCalculated) { return; }
+              valueCalculated = true;
               setValue(arg);
-            // })
-          })
-          return () => unsubscribe();
+            })
+          });
         }, [])
         return value;
       }
@@ -63,9 +62,8 @@ export const augmentForReact = () => augment({
   },
 })
 
-export const enqueueMicroTask = (fn: () => void) => Promise.resolve().then(fn);
-
 export type CreateUseStoreHookLocal<S> = { local: Store<S>, state: DeepReadonly<S> };
+
 export type CreateUseStoreHookGlobal<S> = { store: Store<S>, state: DeepReadonly<S> };
 
 export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store<S> | undefined>) => {
@@ -103,7 +101,7 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
         },
       }), [stateProxy, store]);
     },
-    useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch, deleteAfterDone = false) => {
+    useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
       // get store context and create refs
       const store = useContext(context)!;
       const refs = useRef({ store, key, state, subStore: undefined as CreateUseStoreHookLocal<Patch> | undefined });
@@ -121,14 +119,20 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
         return store[key!]!;
       }, [key, store]);
 
-      // destroy store as required. Note that local state will need to be set in order to not throw an error in strict mode
+      // destroy store as required. Note that care needed to be taken to avoid double-add-remove behavior in React strict mode
+      const effectRun = useRef(false);
       useEffect(() => {
-        if (!deleteAfterDone)
-          return;
+        effectRun.current = true;
         if (!store.$state[key])
           (store[key]! as SetNewNode).$setNew(refs.current.state);
-        return () => store[key].$delete()
-      }, [key, store, deleteAfterDone])
+        return () => {
+          effectRun.current = false;
+          Promise.resolve().then(() => {
+            if (!effectRun.current)
+              store[key].$delete();
+          }).catch(console.error);
+        }
+      }, [key, store]);
 
       return useMemo(() => new Proxy({} as CreateUseStoreHookLocal<Patch>, {
         get(_, p: string) {
@@ -142,8 +146,3 @@ export const createUseStoreHook = <S extends BasicRecord>(context: Context<Store
     }
   };
 }
-// const appStore = createStore({ one: '' });
-// const storeContext = createContext(appStore);
-// const useStore = createUseStoreHook(storeContext);
-// const { store, state } = useStore('two', { child: 'val' });
-// console.log(store.$state.$local);
