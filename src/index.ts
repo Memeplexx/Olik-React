@@ -2,6 +2,7 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   BasicRecord,
+  createStore,
   DeepReadonly,
   Derivation,
   SetNewNode,
@@ -25,33 +26,34 @@ export type UseLocalStore = <Key extends string, Patch extends BasicRecord>(key:
 export type UseStore = <S extends BasicRecord, D extends Derivations>() => CreateUseStoreHookGlobal<S> & WithDerivations<D>;
 
 
-export function createUseStoreHook<
+export function createStoreHooks<
   S extends BasicRecord,
 >(
-  store: Store<S>,
+  state: S,
 ): {
   useStore: () => CreateUseStoreHookGlobal<S>,
   useLocalStore: UseLocalStore,
 };
 
-export function createUseStoreHook<
+export function createStoreHooks<
   S extends BasicRecord,
-  D extends Derivations
+  D extends (str: Store<S>) => Derivations
 >(
-  store: Store<S>,
-  derivations: D
+  state: S,
+  getDerivations: D
 ): {
-  useStore: () => CreateUseStoreHookGlobal<S> & WithDerivations<D>,
+  useStore: () => CreateUseStoreHookGlobal<S> & WithDerivations<ReturnType<D>>,
   useLocalStore: UseLocalStore,
 }
 
-export function createUseStoreHook<
+export function createStoreHooks<
   S extends BasicRecord,
-  D extends Derivations
+  D extends (str: Store<S>) => Derivations
 >(
-  store: Store<S>,
-  derivations?: D
+  state: S,
+  getDerivations?: D
 ) {
+  const store = createStore(state);
   return {
     useStore: () => {
       // get store context and create refs
@@ -74,15 +76,19 @@ export function createUseStoreHook<
         }
       }), [keys]);
 
-      const [der, setDer] = useState(!derivations ? undefined : Object.keys(derivations).reduce((acc, key) => ({ ...acc, [key]: derivations[key]!.$state }), {}));
+      const [der, setDer] = useState((() => {
+        if (!getDerivations) return undefined;
+        const derivations = getDerivations(store);
+        return Object.keys(derivations).reduce((acc, key) => ({ ...acc, [key]: derivations[key]!.$state }), {});
+      }));
       useEffect(() => {
-        if (!derivations)
-          return;
+        if (!getDerivations) return;
+        const derivations = getDerivations(store);
         const listeners = Object.keys(derivations).map(key => derivations[key]!.$onChange(items => setDer(old => ({ ...old, [key]: items }))));
         return () => listeners.forEach(unsubscribe => unsubscribe());
       }, []);
 
-      return useMemo(() => new Proxy({} as CreateUseStoreHookGlobal<S> & WithDerivations<D>, {
+      return useMemo(() => new Proxy({} as CreateUseStoreHookGlobal<S> & WithDerivations<ReturnType<D>>, {
         get(_, p: string) {
           if (p === 'state')
             return stateProxy;
@@ -137,7 +143,7 @@ export function createUseStoreHook<
         },
       }), [storeMemo]);
     }) as UseLocalStore,
-  } 
+  }
 }
 
 
