@@ -2,7 +2,6 @@
 // order due to the fact that the library functions will always be chained the same way
 import {
   BasicRecord,
-  createStore,
   DeepReadonly,
   Derivation,
   SetNewNode,
@@ -26,34 +25,11 @@ export type UseLocalStore = <Key extends string, Patch extends BasicRecord>(key:
 export type UseStore = <S extends BasicRecord, D extends Derivations>() => CreateUseStoreHookGlobal<S> & WithDerivations<D>;
 
 
-export function createStoreHooks<
-  S extends BasicRecord,
+export function createUseStoreHooks<
+  S extends BasicRecord
 >(
-  state: S,
-): {
-  useStore: () => CreateUseStoreHookGlobal<S>,
-  useLocalStore: UseLocalStore,
-};
-
-export function createStoreHooks<
-  S extends BasicRecord,
-  D extends (str: Store<S>) => Derivations
->(
-  state: S,
-  getDerivations: D
-): {
-  useStore: () => CreateUseStoreHookGlobal<S> & WithDerivations<ReturnType<D>>,
-  useLocalStore: UseLocalStore,
-}
-
-export function createStoreHooks<
-  S extends BasicRecord,
-  D extends (str: Store<S>) => Derivations
->(
-  state: S,
-  getDerivations?: D
+  store: Store<S>
 ) {
-  const store = createStore(state);
   return {
     useStore: () => {
       // get store context and create refs
@@ -76,29 +52,15 @@ export function createStoreHooks<
         }
       }), [keys]);
 
-      const [der, setDer] = useState((() => {
-        if (!getDerivations) return undefined;
-        const derivations = getDerivations(store);
-        return Object.keys(derivations).reduce((acc, key) => ({ ...acc, [key]: derivations[key]!.$state }), {});
-      }));
-      useEffect(() => {
-        if (!getDerivations) return;
-        const derivations = getDerivations(store);
-        const listeners = Object.keys(derivations).map(key => derivations[key]!.$onChange(items => setDer(old => ({ ...old, [key]: items }))));
-        return () => listeners.forEach(unsubscribe => unsubscribe());
-      }, []);
-
-      return useMemo(() => new Proxy({} as CreateUseStoreHookGlobal<S> & WithDerivations<ReturnType<D>>, {
+      return useMemo(() => new Proxy({} as CreateUseStoreHookGlobal<S> /*& WithDerivations<D>*/, {
         get(_, p: string) {
           if (p === 'state')
             return stateProxy;
           if (p === 'store')
             return store;
-          if (p === 'derivations')
-            return der;
           throw new Error(`Property ${p} does not exist on store`);
         },
-      }), [stateProxy, der]);
+      }), [stateProxy]);
     },
 
     useLocalStore: (<Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
@@ -114,7 +76,7 @@ export function createStoreHooks<
       // create a memo of the store, and set the new state if it doesn't exist
       const storeMemo = useMemo(() => {
         if (!store.$state[key])
-          (store[key]! as SetNewNode).$setNew(refs.current.state);
+          (store[key]! as SetNewNode<false>).$setNew(refs.current.state);
         return store[key!]!;
       }, [key]);
 
@@ -123,7 +85,7 @@ export function createStoreHooks<
       useEffect(() => {
         effectRun.current = true;
         if (!store.$state[key])
-          (store[key]! as SetNewNode).$setNew(refs.current.state);
+          (store[key]! as SetNewNode<false>).$setNew(refs.current.state);
         return () => {
           effectRun.current = false;
           Promise.resolve().then(() => {
@@ -146,11 +108,22 @@ export function createStoreHooks<
   }
 }
 
-
-// const store = createStore({ one: '', two: [1, 2, 3] });
-// const { useStore, useLocalStore } = createUseStoreHook(store, {
-//   one: store.two.$createSortedList.$ascending(),
-// });
-// const { derivations: { one } } = useStore();
-// const { local, state } = useLocalStore('ssss', { helllllo: '' });
-// local.
+export const createUseDerivationHooks = <D extends Derivations>(
+  derivations: D
+) => {
+  return {
+    useDerivations: () => {
+      const refs = useRef({ derivations });
+      const [, setN] = useState(0);
+      useEffect(() => {
+        const listeners = Object.keys(refs.current.derivations).map(key => refs.current.derivations[key]!.$onChange(() => setN(nn => nn + 1)));
+        return () => listeners.forEach(unsubscribe => unsubscribe());
+      }, []);
+      return useMemo(() => new Proxy({} as { [k in keyof D]: D[k] extends { $state: infer S } ? S : never }, {
+        get(_, p: string) {
+          return refs.current.derivations[p]!.$state;
+        }
+      }), []);
+    }
+  }
+}
