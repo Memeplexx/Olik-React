@@ -12,17 +12,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 
-export type CreateUseStoreHookLocal<S extends BasicRecord> = { local: Store<S>, state: DeepReadonly<S> };
-
-export type CreateUseStoreHookGlobal<S extends BasicRecord> = { store: Store<S>, state: DeepReadonly<S> };
-
-export type Derivations = { [key: string]: Derivation<unknown> | SortMemo<BasicRecord | SortableProperty> };
-
-export type WithDerivations<D extends Derivations> = { derivations: { [k in keyof D]: D[k]['$state'] } };
-
-export type UseLocalStore = <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => CreateUseStoreHookLocal<Patch>;
-
-export type UseStore = <S extends BasicRecord, D extends Derivations>() => CreateUseStoreHookGlobal<S> & WithDerivations<D>;
 
 
 export function createUseStoreHooks<
@@ -52,7 +41,7 @@ export function createUseStoreHooks<
         }
       }), [keys]);
 
-      return useMemo(() => new Proxy({} as CreateUseStoreHookGlobal<S> /*& WithDerivations<D>*/, {
+      return useMemo(() => new Proxy({} as { store: Store<S>, state: DeepReadonly<S> }, {
         get(_, p: string) {
           if (p === 'state')
             return stateProxy;
@@ -63,9 +52,9 @@ export function createUseStoreHooks<
       }), [stateProxy]);
     },
 
-    useLocalStore: (<Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
+    useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
       // get store context and create refs
-      const refs = useRef({ store, key, state, subStore: undefined as CreateUseStoreHookLocal<Patch> | undefined });
+      const refs = useRef({ store, key, state, subStore: undefined as unknown });
 
       // ensure that store changes result in rerender
       const [, setN] = useState(0);
@@ -89,11 +78,11 @@ export function createUseStoreHooks<
           throw new Error(`Property ${p} does not exist on store`);
         },
       }), [storeMemo]);
-    }) as UseLocalStore,
+    },
   }
 }
 
-export const createUseDerivationHooks = <D extends Derivations>(
+export const createUseDerivationHooks = <D extends { [key: string]: Derivation<unknown> | SortMemo<BasicRecord | SortableProperty> }>(
   derivations: D
 ) => {
   return {
