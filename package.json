@@ -1,6 +1,6 @@
 {
   "name": "olik-react",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "type": "module",
   "main": "./dist/olik-react.umd.cjs",
   "module": "./dist/olik-react.js",

@@ -28,7 +28,7 @@ export type UseStore = <S extends BasicRecord, D extends Derivations>() => Creat
 export function createUseStoreHooks<
   S extends BasicRecord
 >(
-  store: Store<S>
+  store: Store<S>,
 ) {
   return {
     useStore: () => {
@@ -78,21 +78,6 @@ export function createUseStoreHooks<
         if (!store.$state[key])
           (store[key]! as SetNewNode<false>).$setNew(refs.current.state);
         return store[key!]!;
-      }, [key]);
-
-      // destroy store as required. Note that care needed to be taken to avoid double-add-remove behavior in React strict mode
-      const effectRun = useRef(false);
-      useEffect(() => {
-        effectRun.current = true;
-        if (!store.$state[key])
-          (store[key]! as SetNewNode<false>).$setNew(refs.current.state);
-        return () => {
-          effectRun.current = false;
-          Promise.resolve().then(() => {
-            if (!effectRun.current)
-              store[key].$delete();
-          }).catch(console.error);
-        }
       }, [key]);
 
       return useMemo(() => new Proxy({}, {
