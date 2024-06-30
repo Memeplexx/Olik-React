@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 
 
-export function createUseStoreHooks<
+export function createStoreHooks<
   S extends BasicRecord
 >(
   store: Store<S>,
@@ -34,22 +34,12 @@ export function createUseStoreHooks<
         return () => listeners.forEach(unsubscribe => unsubscribe());
       }, [keys]);
 
-      const stateProxy = useMemo(() => new Proxy({}, {
+      return useMemo(() => new Proxy({} as DeepReadonly<S>, {
         get(_, p: string) {
           keys.add(p);
           return refs.current.store.$state[p]!;
         }
       }), [keys]);
-
-      return useMemo(() => new Proxy({} as { store: Store<S>, state: DeepReadonly<S> }, {
-        get(_, p: string) {
-          if (p === 'state')
-            return stateProxy;
-          if (p === 'store')
-            return store;
-          throw new Error(`Property ${p} does not exist on store`);
-        },
-      }), [stateProxy]);
     },
 
     useLocalStore: <Key extends string, Patch extends BasicRecord>(key: Key, state: Patch) => {
@@ -65,11 +55,11 @@ export function createUseStoreHooks<
       // create a memo of the store, and set the new state if it doesn't exist
       const storeMemo = useMemo(() => {
         if (!store.$state[key])
-          (store[key]! as SetNewNode<false>).$setNew(refs.current.state);
+          (store[key]! as SetNewNode).$setNew(refs.current.state);
         return store[key!]!;
       }, [key]);
 
-      return useMemo(() => new Proxy({}, {
+      return useMemo(() => new Proxy({} as { local: Store<Patch>, state: DeepReadonly<Patch> }, {
         get(_, p: string) {
           if (p === 'state')
             return storeMemo.$state;
@@ -82,7 +72,7 @@ export function createUseStoreHooks<
   }
 }
 
-export const createUseDerivationHooks = <D extends { [key: string]: Derivation<unknown> | SortMemo<BasicRecord | SortableProperty> }>(
+export const createDerivationHooks = <D extends { [key: string]: Derivation<unknown> | SortMemo<BasicRecord | SortableProperty> }>(
   derivations: D
 ) => {
   return {
